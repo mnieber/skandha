@@ -27,12 +27,12 @@ export function log(ctr, operationMember, facet, args, start) {
   const label = ctrName + "/" + facetName(facet) + "." + operationName;
 
   if (start) {
-    (console: any).group(label);
-    (console: any).log("%c           args: ", "color: gray", args);
-    (console: any).log("%c     state", "color: gray", containerState(ctr));
+    console.group(label);
+    console.log("%c           args: ", "color: gray", args);
+    console.log("%c     state", "color: gray", containerState(ctr));
   } else {
-    (console: any).log("%c     next", "color: gray", containerState(ctr));
-    (console: any).groupEnd(label);
+    console.log("%c     next", "color: gray", containerState(ctr));
+    console.groupEnd(label);
   }
 }
 
