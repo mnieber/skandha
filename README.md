@@ -1,220 +1,353 @@
-# Facet
+# FacilityJS
 
 ## Rationale
 
-Despite having a lot of good libraries, programmers are still reimplementing the same solutions over and over. The reason is that not every solution can be captured in a library. When there are cross-cutting concerns (aka aspects, as in aspect oriented programming), then out-of-the-box solutions often do not fit well enough. This is especially true when the programmer is asked to work with data-structures that are to tightly coupled to a particular framework (for example: Qt).
+Despite having a lot of good libraries, programmers are still reimplementing the same solutions over and over.
+The reason is that not every solution can be captured in a library. When there are cross-cutting concerns (aka
+aspects, as in aspect oriented programming), then out-of-the-box solutions often do not fit well enough. This is
+especially true when the programmer is asked to work with data-structures that are to tightly coupled to a
+particular framework (for example: Qt).
 
-Facet proposes an alternative solution (somewhat inspired by Erlang, though I don't too much about that language) that aims to let the programmer re-use existing logic, without re-using existing data structures. It let's the programmer map their custom data-structures on a set of minimal interfaces (called Facets) and set up policies that enforce particular behaviours between these interfaces. When these interfaces are truly minimal, they can be generic, which leads to better code reuse.
+FacilityJS proposes an alternative solution (somewhat inspired by Erlang) that aims to let the programmer re-use existing logic, without being forced to use particular data structures everywhere. It let's the programmer map
+their custom data-structures on a set of minimal interfaces (called facets) and set up policies that determine how they interact. When these interfaces are truly minimal, they can be generic, which leads to better code reuse.
+
+## Use of MobX
+
+The FacilityJS library works best when it's used in combination with MobX. However, it's possible to use it
+without this dependency. For this reason, there are two main libraries: facet and facet-mobx. In this README
+I will indicate which functionality depends on MobX.
+In general, when the `@observable` decorator is used on a data member, you can use the same code without this
+decorator. You only need this decorator when you want to react automatically to data changes using MobX.
+
+## Links
+
+- The [facility]() library contains the basic building blocks
+- The [facility-mobx]() library contains the bindings to MobX, as well as a collection of facet classes for
+  selection, highlight, filtering, addition, etc.
 
 # Example code:
 
-See https://github.com/mnieber/lindyscience/blob/master/website/screens/moves_container/moves_container.jsx for an example that uses many Facets to implement a rich set of behaviours. Note that all these behaviours come from re-usable code. The `MovesContainer` class itself is implementing almost none of it.
+See this [blog post](https://mnieber.github.io/react/2019/11/27/facet-based-development.html).
 
 # Explanation
 
-Please skip the Details sections if you just want to get a quick overview.
+The FacilityJS library will be explained using some examples that progressively introduce various concepts
+and functions. The example shows how to add reusable selection and highlight behaviour to a container with
+Todo items. Note that you may want to skip the Details sections.
 
-## Container
+## Container and Facets
 
-0. A Container is a set of related data, e.g. a Todo list and its Todos
+A Container is a set of related data, e.g. a Todo list and its Todos. A facet is a member of a container
+that represents a single aspect of this container, e.g. Selection. In the example below we see a `TodosCtr`
+with three facets: `Selection`, `Highlight` and `Inputs`. We are aiming for a design where:
 
-## Facet
+- `Selection` and `Highlight` implement behaviours in a way that is reusable between containers
+- facets can be made to interact. For example, we want to enforce the rule that selected items are also
+  highlighted.
 
-1.0 A Facet is an interface on a Container that focusses on a single aspect, e.g. Selection
-
-### Details
-
-1.1 A Facet class is declared with a decorator:
+Our initial code is:
 
 ```
-    @facetClass
-    class Selection {
-      static get: GetFacet<Selection>;
+    class Selection<ItemT> {
+      // other members omitted
+      static get = (ctr: any): Selection => ctr.selection;
     }
-```
 
-1.2 A facet is registered on a container with a decorator:
+    class Highlight<ItemT> {
+      // other members omitted
+      static get = (ctr: any): Highlight => ctr.highlight;
+    }
 
-```
+    class Inputs {
+      // other members omitted
+      static get = (ctr: any): Inputs => ctr.inputs;
+    }
+
     class TodosCtr {
-      @facet(Selection) selection: Selection;
+      @facet inputs: Inputs;
+      @facet selection: Selection;
+      @facet highlight: Highlight;
     }
 ```
 
-1.3 Facets can be accessed through their class
+Notes:
+
+1. Facets are implemented as classes that have a static get function to retrieve the facet from its container.
+   As we see in the example below, this can make clients agnostic of the container:
 
 ```
-    selection = Selection.get(ctr);
-```
-
-1.4 Facets make clients agnostic of the container.
-
-```
-    const selectionSize = (ctr: any) => Selection.get(ctr).items.length;
-```
-
-1.5 Preferably, Facets have little or no code. Instead of adding a constructor, it's better to add a builder function. This leaves the Facet open to various implementations.
-
-```
-    @facetClass
-    export class Selection {
-      @input selectableIds: Array<any>;
-      @observable ids: Array<any> = [];
-      @observable anchorId: any;
-      @output items: Array<any>;
-
-      @operation selectItem({ itemId, isShift, isCtrl }) {}
-
-      static get: GetFacet<Selection>;
+    function foo(ctr: any) {
+      // works for any ctr that has a Selection facet
+      selection = Selection.get(ctr);
     }
 ```
 
-1.6 Note that in the example above, the Facet doesn't decide how the `selection.items` slot is filled, only that clients can expect to have an array of items (corresponding to `selection.ids`).
+## The mapDatas function (part of facet-mobx)
 
-1.7 For convenience, it's good to provide a default Policy for filling slots. The following Policy fills the `selection.items` slot by looking up each id in a map that is provided by some other Facet. Note that `mapData` takes three arguments:
-
-- a list of fields to look up. In this case: `Collection.get(ctr)[itemById]` and `Selection.get(ctr)["ids"]`
-- the output slot to fill. In this case: `Selection.get(ctr)["items"]`
-- a transformation function. In this case: a function that looks up ids in `itemById`.
-
-```
-  export const selectionActsOnItems = ([Collection, itemById]) =>
-    mapDatas(
-      [[Collection, itemById], [Selection, "ids"]],
-      [Selection, "items"],
-      (itemById, ids) => lookUp(ids, itemById)
-    );
-```
-
-## Data management
-
-2.0 Facets usually contain data.
+An important way in which facets can interact is by mapping data from one facet field onto a different
+facet field. For example, we may want to fill the `items` member of `Selection` by looking up objects in
+in the `todoItemById` field of the `Inputs` facet. The `mapDatas` can be used to perform such mappings.
+It takes a specification of one or more input fields (as tuples containing a facet class and an input field name)
+and a specification of the output field. The input fields are mapped onto the output field, possibly applying
+a transformation function. Note that this mapping is automatically kept up-to-date by MobX.
+In the example below, we map `selection.ids` and `inputs.todoItemById` onto `selection.items`:
 
 ```
-    @facetClass
-    class Selection {
-      @observable ids: Array<any> = [];
-      @input selectableIds: Array<any>;
-      @output items: Array<any>;
-      ...
-}
-```
-
-Fields marked with `@input` and `@output` are slots to be filled by policies. Fields marked with `@observable` are managed by the Facet directly.
-
-2.1 The Container class can set up data mappings between its Facets. For example, we can fill the slot `ctr.selection.selectableIds` using `getIds(ctr.inputs.todos)` as follows:
-
-```
-    class TodosCtr {
-      ...
-      _createPolicies() {
-        const policy = mapData([Inputs, "todos"], [Selection, "selectableIds"], getIds);
-        policy(this);
-      }
+    class Inputs {
+      @observable todoItemById = {};
+      static get = (ctr: any): Inputs => ctr.inputs;
     }
-}
+
+    class Selection<ItemT> {
+      @observable ids: Array<string> = [];
+      items?: Array<ItemT>;
+
+      // other members omitted
+      static get = (ctr: any): Selection => ctr.selection;
+    }
+
+    class TodosCtr { /* see above */ }
+
+    function exampleOfMapDatas(ctr: TodosCtr) {
+      mapDatas(
+        [[Inputs, "todoItemById"], [Selection, "ids"]],
+        [Selection, "items"],
+        (itemById, ids) => lookUp(ids, itemById)
+      )(ctr);
+    }
 ```
 
-Note that `mapData` doesn't know about `TodosCtr`, but it can still access its Facets, see 1.3 and 1.4.
+Note: we will see this particular data mapping again later, as the `selectionActsOnItems` function.
 
 ### Details
 
-2.1.1 Internally, `mapData` uses `MobX.extendObservable` to create a `@computed` property on the target instance that returns data from the source instance. In the above example, the result of calling `mapData` is equivalent to calling `MobX.extendObservable(ctr.selection, { get selectableIds() { return getIds(ctr.inputs.todos); }}`.
-
-2.1.2 Sometimes, using `MobX.extendObservable` creates a cycle the MobX will complain about. In that case, one could use `relayData`, which is based on `MobX.reaction`.
-
-## Operations
-
-3.0 Facets can declare operations. These are signals that can be handled by the Facet itself or by a policy.
+Internally, `mapDatas` uses `MobX.extendObservable` to create a `@computed` property on the target instance that returns data from the source instance. In the above example, the use of `mapDatas` to fill
+``selection.selectableIds` is equivalent to calling
 
 ```
-    @facetClass
-    class Selection {
-      @operation selectItem({ itemId, isShift, isCtrl }) {}
-      ...
+MobX.extendObservable(
+  ctr.selection,
+  {
+    get selectableIds() {
+      return lookUp(ctr.selection.ids, ctr.inputs.todoItemById);
+    }
+  }
+);
+```
+
+Sometimes, using `MobX.extendObservable` creates a cycle that MobX will complain about. In that case, one can
+use `relayDatas`, which has the same signature as `mapDatas` but is implemented using `MobX.reaction`.
+
+## Adding behaviour to Facets using callback functions
+
+We will now add a `selectItem` function to the `Selection` facet. We aim for the following:
+
+- we don't want to hard-code how selection is done. Instead, we want to give the client some freedom over how
+  this works. For example, in some cases we want to select ranges with the shift key, but in other cases
+  we only want to allow selection of single items.
+- we want to allow the client to setup additional behaviour that happens when an item is selected. For example,
+  we may want to also highlight the selected item
+
+To achieve these aims we will base the `selectItem`` function on an aspect oriented framework described
+here: <url here>. Specifically, we will:
+
+- add members `selectableIds` and `anchorId` to the `Selection` facet.
+- add a `selectItem` function to `Selection` that receives the id of the newly selected item and
+  sets the new contents of `selection.ids`. The `selectItem` function will be a Template Method that triggers a callback function to do the actual work.
+- (in a next step, described later) install handlers for this callback in the constructor of `TodosCtr`.
+  These handlers will take care of updating the selection and highlighting the selected item.
+
+The `Selection` facet now looks like this (note that `@operation` and `exec` come from <AOP ref here>):
+
+```
+export class Selection<ItemT> {
+  @observable selectableIds?: Array<string>;
+  @observable ids: Array<string> = [];
+  @observable anchorId: string;
+  @observable items?: Array<ItemT>;
+
+  @operation selectItem({ itemId, isShift, isCtrl }) {
+    if (!this.selectableIds.contains(itemId)) {
+      throw Error(`Invalid id: ${itemId}`);
+    }
+    exec("selectItem");
+  }
+
+  static get = (ctr: any): Selection => ctr.selection;
 }
 ```
 
-3.1 Clients can listen to an operation.
+## Setting up policies inside a container class
+
+We will make the following changes to `TodosCtr`:
+
+- install a policy that fills `selection.selectableIds` based on `inputs.todoItemById`.
+- install a handler for the "selectItem" callback
+- install an additional handler for "selectItem" to ensure that selected items are also highlighted
+
+The `TodoListContainer` now looks like this:
 
 ```
-    function handleSelectItem(ctr) {
-      listen(Selection.get(ctr), 'selectItem', ({ itemId }) => {
-        const selection = Selection.get(ctr);
-        // add itemId to selection.ids
-      })
-}
-```
+import { Selection, handleSelectItem } from 'facet-mobx/facets/Selection';
+// other imports omitted
 
-## External dependencies
+class ToDoListContainer {
+  @facet selection: Selection = new Selection();
+  @facet highlight: Highlight = new Highlight();
+  @facet inputs: Inputs = new Inputs();
 
-### Details
+  constructor() {
+    registerFacets(this);
+    this._installActions();
+    this._applyPolicies();
+  }
 
-4.0 The builder for a Facet may take external dependencies. For example, the Selection facet may depend on an external function to persist the selection:
-
-```
-    @facetClass
-    class Selection {
-      @input persistIds: Array<any> => any;
-      ...
-    }
-
-    const initSelection = (self: Selection, {persistIds}) => {
-      self.persistIds = persistIds;
-    }
-
-    function handleSelectItem(ctr) {
-      listen(Selection.get(ctr), 'selectItem', ({ itemId }) => {
-        const selection = Selection.get(ctr);
-        ...
-        // Call the external persistIds function
-        selection.persistIds(selection.ids);
-      })
-```
-
-## Policies
-
-5.0 Policies are rules that create relations between Facets. In 2.1 we saw a policy that says that the list of selectable ids (in the Selection facet) is obtained from the list of input todos (in the Inputs facet).
-
-5.1 Here is a policy that says that highlight follows selection, unless if we are shift-selecting or ctrl-selecting:
-
-```
-  const highlightFollowsSelection = (ctr: any) => {
-    listen(Selection.get(ctr), "selectItem", ({ itemId, isShift, isCtrl }) => {
-      if (!isCtrl && !isShift) {
-        Highlight.get(ctr).highlightItem(itemId);
+  _installActions() {
+    installActions(this.selection, {
+      selectItem: {
+        // install the default selection handler as a callback
+        selectItem: [handleSelectItem],
+        // install a rule that ensures that selected items are highlighted
+        selectItem_post: [MobXPolicies.highlightFollowsSelection],
       }
     });
-  };
-```
+  }
 
-5.2 Policies can of course use MobX.reaction to react to data changes.
-
-## Handlers
-
-6.0 Handlers are Policies that handle GUI events by using Facets. They expose methods such as `onKeyUp`/`onKeyDown` that can be used directly in React components.
-
-```
-export class EditWithKeys {
-  ...
-  handle = (keyEdit: string) => ({
-    onKeyEvent: (key: string, e: any) => {
-      if (key == keyEdit) {
-        const editing = Editing.get(this.container);
-        editing.setIsEditing(!editing.isEditing);
-      }
-    },
-  })
+  _applyPolicies() {
+    // Create mapping onto selection.selectableIds. Remember that mapDatas depends on MobX
+    mapDatas([[Inputs, 'todoItemById']], [Selection, 'selectableIds'], getIds)(this);
+    // Map onto selection.items. See explanation below
+    selectionActsOnItems([Inputs, "todoItemById"])(this);
+  }
 }
-
-  ...
-
-  // Usage example
-  const div =
-    <KeyboardEventHandler
-      handleKeys={["ctrl+e"]}
-      {...ctr.handlers.editWithKeys.handle("ctrl+e")}
-    >
-      <SomeInternalComponent/>
-    </KeyboardEventHandler>;
 ```
+
+Notes:
+
+0. The call to `registerFacets` is mandatory. It creates a back-reference to the container in each facet
+   instance.
+1. The `installActions` function comes from <AOP ref here>. We use it here to install callback functions that
+   handle selection and make sure that selected items are highlighted.
+1. The `selectionActsOnItems` function is a reusable helper that provides a data mapping from an "itemById"
+   field onto the `selection.items` field. It's implemented as follows:
+
+   ```
+     export const selectionActsOnItems = ([Collection, itemById]) =>
+       mapDatas(
+         [[Collection, itemById], [Selection, "ids"]],
+         [Selection, "items"],
+         (itemById, ids) => lookUp(ids, itemById)
+       );
+   ```
+
+1. A more concise way to write the `_installPolicies` function is as follows:
+
+   ```
+      _applyPolicies() {
+        const policies = [
+          mapDatas([[Inputs, 'todoItemById']], [Selection, 'selectableIds'], getIds),
+          selectionActsOnItems([Inputs, "todoItemById"]),
+        ];
+
+        installPolicies(policies, this);
+      }
+   ```
+
+Let's review what we've achieved:
+
+1. Our container uses reusable classes for Selection and Highlight.
+2. We've set up interaction between the Selection, Highlight and Inputs facets using mapping functions that
+   are either reusable (`selectionActsOnItems`, `highlightFollowsSelection`) or generic (`mapDatas`).
+3. The interations between facets are made explicit in the TodosCtr class. This makes the interactions easier to
+   discover than if they had been inserted directly into the facets.
+
+## Logging
+
+The FacilityJS library allows you to inspect each facet before and after calling an operation. An operation is any
+facet member function that is decorated with @operation. You can turn on logging as follows:
+
+```
+import { options as facetOptions } from 'facet';
+
+options.logging = true;
+```
+
+Facet members that are decorated with `@input`, `@output` and `@data` (these decorators are all the same,
+the difference in name is just to help the reader understand the intention behind the data members).
+
+```
+export class Selection<ItemT> {
+  @observable @input selectableIds?: Array<string>;  // this is logged
+  @observable ids: Array<string> = [];               // this is not logged
+
+  // other members omitted
+}
+```
+
+The logging looks similar to what you are used to from Redux:
+
+- before and after each operation, the entire container that holds the facet is logged
+- all decorated data members of each facet in the container are included in the log
+- log entries are nested so that you can see how operation calls are nested
+
+## Overriding an operation
+
+It's also possible to completely override the body of an operation in an already instantiated facet. This can be
+useful when the default implementation of the operation is not suitable:
+
+```
+handle(
+  ctr.selection,
+  "selectItem",
+  ({itemId, isShift, isCtrl}) => { /* do something */},
+);
+```
+
+## Signalling: operations
+
+When calling an operation on a facet, it's possible to notify clients who are outside of the container. This
+is done by connecting to a signal:
+
+```
+listen(
+  ctr.selection,
+  "selectItem",
+  ({itemId, isShift, isCtrl}) => { /* do something */},
+  { after: true,  // this is the default option }
+);
+```
+
+The last argument is a dictionary of options. This argument is optional. If you set `after: false` then the
+signal will be received before the operation is called.
+
+## Signalling: other information
+
+The signalling mechanism that is used to notify listeners of operations can also be used to signal other
+kinds of information. The `sendMsg` function can be used to emit information:
+
+```
+function foo(ctr: TodosCtr) {
+  const topic = 'Selection.sizeInformation';
+  const details = {
+    newSize: 1001
+  };
+  sendMsg(ctr.selection, topic, details);
+}
+```
+
+The `subscribe` function is used to subscribe to a topic:
+
+```
+function bar(ctr: TodosCtr) {
+  subscribe(ctr.selection, 'Selection.*', (msg: any) => {
+    console.log(msg.details);
+  };);
+}
+```
+
+## Various helper functions
+
+- `facetName(facet)` returns the name of the facet given the facet instance
+- `facetClassName(facetClass)` returns the name of the facet given the facet class
+- `ctrState(ctr)` collects all data members of all facets in a dictionary (used in logging)
+- `getCtr(facet)` returns the container for a facet

@@ -1,0 +1,17 @@
+{
+  "name": "facility",
+  "version": "0.0.1",
+  "description": "Create data containers with modular behaviours",
+  "main": "index.js",
+  "repository": "https://github.com/mnieber/facility.git",
+  "author": "Maarten Nieber",
+  "license": "MIT",
+  "types": "index.d.ts",
+  "prepublish": "tsc",
+  "dependencies": {
+    "micro-signals": "^2.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.0.3"
+  }
+}
