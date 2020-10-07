@@ -1,4 +1,4 @@
 export const options = {
   logging: false,
-  formatObject: (x: any) => x,
+  formatObject: (x) => x,
 };

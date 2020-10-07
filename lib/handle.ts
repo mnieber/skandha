@@ -1,6 +1,6 @@
-import { facetName } from "facet/internal/logging";
-import { symbols } from "facet/internal/symbols";
-import { getOrCreate } from "facet/internal/utils";
+import { facetName } from "../internal/logging";
+import { symbols } from "../internal/symbols";
+import { getOrCreate } from "../internal/utils";
 
 export function handle(operationHost, operationMember, callback) {
   if (!operationHost[operationMember]) {

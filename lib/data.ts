@@ -1,7 +1,7 @@
-import { getOrCreate } from "facet/internal/utils";
-import { symbols } from "facet/internal/symbols";
+import { getOrCreate } from "../internal/utils";
+import { symbols } from "../internal/symbols";
 
-export function data(dataHost, dataMember, descriptor) {
+export function data(dataHost, dataMember, descriptor = undefined) {
   const facetClass = dataHost.constructor;
   const datas = getOrCreate(facetClass, symbols.dataMembers, () => ({}));
   datas[dataMember] = true;

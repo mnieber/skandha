@@ -1,42 +1,44 @@
-import { getOrCreate } from "facet/internal/utils";
-import { options } from "facet/internal/options";
-import { symbols, symbolName } from "facet/internal/symbols";
+import { symbols } from "./symbols";
+import { getCtr } from "./ctr";
+import { options } from "./options";
 
 export function facetClassName(facetClass) {
-  return symbolName(facetClass[symbols.symbol]);
+  return facetClass.name;
 }
 
 export function facetName(facet) {
-  return symbolName(facet.constructor[symbols.symbol]);
+  const ctr = getCtr(facet);
+  return ctr.constructor.name + "/" + facet.constructor.name;
 }
 
 function camelToSnake(string) {
   return string
-    .replace(/[\w]([A-Z])/g, function(m) {
+    .replace(/[\w]([A-Z])/g, function (m) {
       return m[0] + "_" + m[1];
     })
     .toLowerCase();
 }
 
-export const opName = operationMember =>
+export const opName = (operationMember) =>
   camelToSnake(operationMember).toUpperCase();
 
-export function log(ctr, operationMember, facet, args, start) {
-  const ctrName = ctr.constructor.name;
+export function log(facet, operationMember, args, start) {
+  const ctr = getCtr(facet);
   const operationName = opName(operationMember);
-  const label = ctrName + "/" + facetName(facet) + "." + operationName;
+  const label = facetName(facet) + "." + operationName;
 
   if (start) {
     console.group(label);
     console.log("%c           args: ", "color: gray", args);
-    console.log("%c     state", "color: gray", containerState(ctr));
+    console.log("%c     state", "color: gray", ctrState(ctr));
   } else {
-    console.log("%c     next", "color: gray", containerState(ctr));
+    console.log("%c     next", "color: gray", ctrState(ctr));
+    // @ts-ignore
     console.groupEnd(label);
   }
 }
 
-export function containerState(ctr) {
+export function ctrState(ctr) {
   if (ctr) {
     return ctr.constructor[symbols.facetMembers].reduce((acc, facetMember) => {
       const facet = ctr[facetMember];
