@@ -1,7 +1,17 @@
 import { eventType, getSignal } from "../internal/events";
 import { getCtr } from "../internal/ctr";
 
-export function listen(facet, operationMember, callback, options = undefined) {
+interface OptionsT {
+  after: string;
+  onlyArgs: boolean;
+}
+
+export function listen(
+  facet,
+  operationMember,
+  callback,
+  options: OptionsT | undefined = undefined
+) {
   const _type = eventType(facet.constructor, operationMember);
   const _after = options?.after === undefined ? true : options?.after;
   const _onlyArgs = options?.onlyArgs === undefined ? true : options?.onlyArgs;
