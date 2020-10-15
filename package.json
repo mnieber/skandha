@@ -1,6 +1,6 @@
 {
   "name": "facet",
-  "version": "1.0.3",
+  "version": "1.0.9",
   "description": "Create data containers with modular behaviours",
   "main": "index.js",
   "repository": "https://github.com/mnieber/facet.git",

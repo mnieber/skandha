@@ -1,4 +1,7 @@
-export function installPolicies(policies, ctr) {
+export function installPolicies<CtrT>(
+  policies: ((ctr: CtrT) => void)[],
+  ctr: CtrT
+) {
   policies.forEach((policy) => {
     policy(ctr);
   });
