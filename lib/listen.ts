@@ -2,8 +2,8 @@ import { eventType, getSignal } from "../internal/events";
 import { getCtr } from "../internal/ctr";
 
 interface OptionsT {
-  after: string;
-  onlyArgs: boolean;
+  after?: boolean;
+  onlyArgs?: boolean;
 }
 
 export function listen(
