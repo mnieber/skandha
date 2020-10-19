@@ -1,4 +1,5 @@
 export { facetName, facetClassName, ctrState } from "./internal/logging";
+export { getCtr } from "./internal/ctr";
 export { input, output, data, isDataMember } from "./lib/data";
 export { handle } from "./lib/handle";
 export { options } from "./internal/options";
