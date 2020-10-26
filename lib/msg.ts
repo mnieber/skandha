@@ -12,7 +12,9 @@ function matchFilename(str: string, rule: string) {
 }
 
 export function sendMsg(facet, topic, details = {}) {
-  getSignal(getCtr(facet)).send({
+  const ctr = getCtr(facet);
+  const signal = getSignal(ctr);
+  signal.dispatch({
     type: _type,
     topic,
     details,
