@@ -46,19 +46,21 @@ export class StackFrame<FunctT extends Function> {
       throw Error("Action not found: " + label);
     }
 
-    this._runTo(this.pointer + offset);
+    return this._runTo(this.pointer + offset);
   }
 
   finish() {
-    this._runTo(this.actions.length - 1);
+    return this._runTo(this.actions.length - 1);
   }
 
   _runTo(targetPointer: number) {
+    var result = undefined;
     while (this.pointer <= targetPointer) {
       const func = this.actions[this.pointer].func;
-      func.bind(this.self)(...this.args);
+      result = func.bind(this.self)(...this.args);
       this.pointer += 1;
     }
+    return result;
   }
 }
 
@@ -71,9 +73,7 @@ const _installActions = <
   actionFunctions: ActionArray<FacetT, K>
 ) => {
   const actions = actionFunctions.map((x) => {
-    return "label" in x && "func" in x
-      ? x
-      : lbl(x[symbols.actionLabel] ?? "", x);
+    return "label" in x && "func" in x ? x : lbl("", x);
   });
 
   const actionsByOperationName = getOrCreate(
@@ -102,7 +102,7 @@ export const exec = (label: string) => {
   if (!stackFrame || !stackFrame.actions) {
     throw Error("No stackframe");
   }
-  stackFrame.exec(label);
+  return stackFrame.exec(label);
 };
 
 const stack: any[] = [];
@@ -113,9 +113,4 @@ export const pushStackFrame = (x: any) => {
 
 export const popStackFrame = () => {
   stack.pop();
-};
-
-export const opAction = (label: string) => <FuncT>(f: FuncT) => {
-  f[symbols.actionLabel] = label;
-  return f;
 };

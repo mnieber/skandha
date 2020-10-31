@@ -5,7 +5,6 @@ export const symbols = {
   facetMembers: Symbol("facetFacetMembers"),
   parentContainer: Symbol("facetParentContainer"),
   actions: Symbol("facetActions"),
-  actionLabel: Symbol("actionLabel"),
 };
 
 export function symbolName(symbol) {

@@ -1,6 +1,6 @@
 import { options } from "../internal/options";
 import { symbols } from "../internal/symbols";
-import { log, facetClassName } from "../internal/logging";
+import { log } from "../internal/logging";
 import { sendEvent } from "../internal/events";
 import { StackFrame, pushStackFrame, popStackFrame } from "./StackFrame";
 
@@ -45,9 +45,7 @@ export function operation(operationHost, operationMember, descriptor) {
 
       if (stackFrame) {
         if (stackFrame.pointer === 0) {
-          stackFrame.exec(
-            facetClassName(facet.constructor) + "." + operationMember
-          );
+          stackFrame.exec(operationMember);
         }
         stackFrame.finish();
       }

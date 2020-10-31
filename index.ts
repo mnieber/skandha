@@ -8,7 +8,7 @@ export { sendMsg, subscribe } from "./lib/msg";
 export { operation, async_opn } from "./lib/operation";
 export { facet, registerFacets, getFacet } from "./lib/facet";
 export { installPolicies } from "./lib/install";
-export { installActions, lbl, exec, opAction } from "./lib/StackFrame";
+export { installActions, lbl, exec } from "./lib/StackFrame";
 
 export type ClassT = any;
 export type MemberNameT = string;
