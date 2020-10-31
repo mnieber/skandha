@@ -1,7 +1,8 @@
 import { options } from "../internal/options";
 import { symbols } from "../internal/symbols";
-import { log } from "../internal/logging";
+import { log, facetClassName } from "../internal/logging";
 import { sendEvent } from "../internal/events";
+import { StackFrame, pushStackFrame, popStackFrame } from "./StackFrame";
 
 // Do some magic to ensure that the member function
 // is bound to it's host.
@@ -30,11 +31,28 @@ export function operation(operationHost, operationMember, descriptor) {
       options.logging && log(facet, operationMember, args, true);
       sendEvent(facet, operationMember, args, false);
 
+      const actions = (facet[symbols.actions] || {})[operationMember];
+      const stackFrame = actions
+        ? new StackFrame(actions, this, args)
+        : undefined;
+      pushStackFrame(stackFrame);
+
       const handlers = facet[symbols.operationHandlers];
       const returnValue =
         handlers && handlers[operationMember]
           ? handlers[operationMember](...args)
           : f.bind(this)(...args);
+
+      if (stackFrame) {
+        if (stackFrame.pointer === 0) {
+          stackFrame.exec(
+            facetClassName(facet.constructor) + "." + operationMember
+          );
+        }
+        stackFrame.finish();
+      }
+
+      popStackFrame();
 
       sendEvent(facet, operationMember, args, true);
       options.logging && log(facet, operationMember, args, false);
