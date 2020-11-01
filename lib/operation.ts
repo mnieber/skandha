@@ -32,14 +32,7 @@ export function operation(operationHost, operationMember, descriptor) {
       sendEvent(facet, operationMember, args, false);
 
       const actions = (facet[symbols.actions] || {})[operationMember];
-      if (!actions) {
-        throw Error(
-          `No actions where installed for operation ${operationMember} of ${facetName(
-            facet
-          )}`
-        );
-      }
-      const stackFrame = new StackFrame(actions, this, args);
+      const stackFrame = new StackFrame(actions ?? [], this, args);
       pushStackFrame(stackFrame);
       stackFrame.begin();
 
