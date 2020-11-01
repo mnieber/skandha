@@ -37,16 +37,32 @@ export class StackFrame<FunctT extends Function> {
 
   matches = (label: string) => (x: LabelledFuncT<FunctT>) => x.label === label;
 
-  exec(label: string) {
-    const offset = this.actions
-      .slice(this.pointer)
-      .findIndex(this.matches(label));
+  exec(label: string, options: any) {
+    const isMatch = this.matches(label);
+    const offset = this.actions.slice(this.pointer).findIndex(isMatch);
 
     if (offset === -1) {
-      throw Error("Action not found: " + label);
+      if (!options?.optional) {
+        throw Error("Action not found: " + label);
+      }
+      return undefined;
     }
 
-    return this._runTo(this.pointer + offset);
+    // since the label may be repeated, advance the pointer
+    // to the last consecutive instance of the label
+    var targetPointer = this.pointer + offset;
+    while (
+      targetPointer + 1 < this.actions.length &&
+      isMatch(this.actions[targetPointer + 1])
+    ) {
+      targetPointer += 1;
+    }
+
+    return this._runTo(targetPointer);
+  }
+
+  begin() {
+    return this.exec("BEGIN", { optional: true });
   }
 
   finish() {
@@ -97,12 +113,12 @@ export const installActions = <FacetT extends PartialMap<FacetT>>(
   });
 };
 
-export const exec = (label: string) => {
+export const exec = (label: string, options: any = undefined) => {
   const stackFrame = stack[stack.length - 1];
   if (!stackFrame || !stackFrame.actions) {
     throw Error("No stackframe");
   }
-  return stackFrame.exec(label);
+  return stackFrame.exec(label, options);
 };
 
 const stack: any[] = [];

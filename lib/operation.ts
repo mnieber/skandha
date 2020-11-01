@@ -1,6 +1,6 @@
 import { options } from "../internal/options";
 import { symbols } from "../internal/symbols";
-import { log } from "../internal/logging";
+import { log, facetName } from "../internal/logging";
 import { sendEvent } from "../internal/events";
 import { StackFrame, pushStackFrame, popStackFrame } from "./StackFrame";
 
@@ -32,10 +32,16 @@ export function operation(operationHost, operationMember, descriptor) {
       sendEvent(facet, operationMember, args, false);
 
       const actions = (facet[symbols.actions] || {})[operationMember];
-      const stackFrame = actions
-        ? new StackFrame(actions, this, args)
-        : undefined;
+      if (!actions) {
+        throw Error(
+          `No actions where installed for operation ${operationMember} of ${facetName(
+            facet
+          )}`
+        );
+      }
+      const stackFrame = new StackFrame(actions, this, args);
       pushStackFrame(stackFrame);
+      stackFrame.begin();
 
       const handlers = facet[symbols.operationHandlers];
       const returnValue =
@@ -43,13 +49,7 @@ export function operation(operationHost, operationMember, descriptor) {
           ? handlers[operationMember](...args)
           : f.bind(this)(...args);
 
-      if (stackFrame) {
-        if (stackFrame.pointer === 0) {
-          stackFrame.exec(operationMember);
-        }
-        stackFrame.finish();
-      }
-
+      stackFrame.finish();
       popStackFrame();
 
       sendEvent(facet, operationMember, args, true);
