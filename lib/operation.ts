@@ -1,6 +1,6 @@
 import { options } from "../internal/options";
 import { symbols } from "../internal/symbols";
-import { log, facetName } from "../internal/logging";
+import { log } from "../internal/logging";
 import { sendEvent } from "../internal/events";
 import { StackFrame, pushStackFrame, popStackFrame } from "./StackFrame";
 
