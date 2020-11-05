@@ -1,19 +1,23 @@
 import { symbols } from "../internal/symbols";
 import { getOrCreate } from "../internal/utils";
 
-export type LabelledFuncT<FunctT extends Function> = {
+export type LabelledFuncT<FuncT extends (...a: any) => any> = {
   label: string;
-  func: FunctT;
+  func: (...a: Parameters<FuncT>) => any;
 };
+
+export type UnlabelledFuncT<FuncT extends (...a: any) => any> = (
+  ...a: Parameters<FuncT>
+) => any;
 
 type PartialMap<T> = { [k in keyof T]: any };
 
 type ActionArray<
   FacetT extends PartialMap<FacetT>,
   K extends keyof FacetT
-> = Array<FacetT[K] | LabelledFuncT<FacetT[K]>>;
+> = Array<UnlabelledFuncT<FacetT[K]> | LabelledFuncT<FacetT[K]>>;
 
-export const lbl = <FuncT extends Function>(
+export const lbl = <FuncT extends (...a: any) => any>(
   label: string,
   func: FuncT
 ): LabelledFuncT<FuncT> => {
@@ -23,19 +27,19 @@ export const lbl = <FuncT extends Function>(
   };
 };
 
-export class StackFrame<FunctT extends Function> {
-  actions: LabelledFuncT<FunctT>[];
+export class StackFrame<FuncT extends (...a: any) => any> {
+  actions: LabelledFuncT<FuncT>[];
   pointer: number = 0;
   self: any;
-  args: any[];
+  args: Parameters<FuncT>;
 
-  constructor(actions: LabelledFuncT<FunctT>[], self: any, args) {
+  constructor(actions: LabelledFuncT<FuncT>[], self: any, args) {
     this.actions = actions;
     this.self = self;
     this.args = args;
   }
 
-  matches = (label: string) => (x: LabelledFuncT<FunctT>) => x.label === label;
+  matches = (label: string) => (x: LabelledFuncT<FuncT>) => x.label === label;
 
   exec(label: string, options: any) {
     const isMatch = this.matches(label);
