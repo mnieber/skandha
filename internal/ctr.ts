@@ -1,6 +1,6 @@
 import { symbols } from "./symbols";
 
-export function getCtr(facet) {
+export function getCtr<CtrT = any>(facet): CtrT {
   return facet[symbols.parentContainer];
 }
 

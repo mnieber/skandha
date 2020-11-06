@@ -4,7 +4,7 @@ export const symbols = {
   dataMembers: Symbol("facetDataMembers"),
   facetMembers: Symbol("facetFacetMembers"),
   parentContainer: Symbol("facetParentContainer"),
-  actions: Symbol("facetActions"),
+  actionMap: Symbol("facetActionMap"),
 };
 
 export function symbolName(symbol) {

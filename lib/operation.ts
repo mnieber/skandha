@@ -2,7 +2,7 @@ import { options } from "../internal/options";
 import { symbols } from "../internal/symbols";
 import { log } from "../internal/logging";
 import { sendEvent } from "../internal/events";
-import { StackFrame, pushStackFrame, popStackFrame } from "./StackFrame";
+import { Callbacks, pushCallbacks, popCallbacks } from "./Callbacks";
 
 // Do some magic to ensure that the member function
 // is bound to it's host.
@@ -31,10 +31,10 @@ export function operation(operationHost, operationMember, descriptor) {
       options.logging && log(facet, operationMember, args, true);
       sendEvent(facet, operationMember, args, false);
 
-      const actions = (facet[symbols.actions] || {})[operationMember];
-      const stackFrame = new StackFrame(actions ?? [], this, args);
-      pushStackFrame(stackFrame);
-      stackFrame.begin();
+      const actionMap = (facet[symbols.actionMap] || {})[operationMember];
+      const callbacks = new Callbacks(actionMap ?? {}, this, args);
+      pushCallbacks(callbacks);
+      callbacks.enter();
 
       const handlers = facet[symbols.operationHandlers];
       const returnValue =
@@ -42,8 +42,8 @@ export function operation(operationHost, operationMember, descriptor) {
           ? handlers[operationMember](...args)
           : f.bind(this)(...args);
 
-      stackFrame.finish();
-      popStackFrame();
+      callbacks.exit();
+      popCallbacks();
 
       sendEvent(facet, operationMember, args, true);
       options.logging && log(facet, operationMember, args, false);
