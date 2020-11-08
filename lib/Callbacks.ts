@@ -23,6 +23,13 @@ export class Callbacks<FuncT extends (...a: any) => any> {
   }
 
   exec(label: string, options: any) {
+    this._exec(label + "_pre", { ...options, optional: true });
+    const result = this._exec(label, options);
+    this._exec(label + "_post", { ...options, optional: true });
+    return result;
+  }
+
+  _exec(label: string, options: any) {
     const actions = this.actions[label];
 
     if (actions === undefined) {
@@ -40,11 +47,11 @@ export class Callbacks<FuncT extends (...a: any) => any> {
   }
 
   enter() {
-    return this.exec("enter", { optional: true });
+    return this._exec("enter", { optional: true });
   }
 
   exit() {
-    return this.exec("exit", { optional: true });
+    return this._exec("exit", { optional: true });
   }
 }
 
