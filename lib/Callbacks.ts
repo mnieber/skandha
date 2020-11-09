@@ -5,18 +5,16 @@ export type ToAny<FuncT extends (...a: any) => any> = (
   ...a: Parameters<FuncT>
 ) => any;
 
-type PartialMap<T> = { [k in keyof T]: any };
-
-type CallbackMap<FacetT extends PartialMap<FacetT>, K extends keyof FacetT> = {
-  [label: string]: ToAny<FacetT[K]>[];
+type FunctionMap<FuncT extends (...a: any) => any> = {
+  [label: string]: ToAny<FuncT>[];
 };
 
 export class Callbacks<FuncT extends (...a: any) => any> {
-  callbacks: ToAny<FuncT>[];
+  callbacks: FunctionMap<FuncT>;
   self: any;
   args: Parameters<FuncT>;
 
-  constructor(callbacks: ToAny<FuncT>[], self: any, args) {
+  constructor(callbacks: FunctionMap<FuncT>, self: any, args) {
     this.callbacks = callbacks;
     this.self = self;
     this.args = args;
@@ -55,13 +53,15 @@ export class Callbacks<FuncT extends (...a: any) => any> {
   }
 }
 
+type PartialMap<T> = { [k in keyof T]: any };
+
 const _setCallbacks = <
-  FacetT extends { [k in keyof FacetT]: any },
+  FacetT extends PartialMap<FacetT>,
   K extends keyof FacetT
 >(
   facet: FacetT,
   operationMember: K,
-  callbackMap: CallbackMap<FacetT, K>
+  callbackMap: FunctionMap<FacetT[K]>
 ) => {
   const callbackByOperationName = getOrCreate(
     facet,
@@ -75,7 +75,7 @@ export const setCallbacks = <FacetT extends PartialMap<FacetT>>(
   facet: FacetT,
   callbacksByOperationMember: Partial<
     {
-      [K in keyof FacetT]: CallbackMap<FacetT, K>;
+      [K in keyof FacetT]: FunctionMap<FacetT[K]>;
     }
   >
 ) => {
