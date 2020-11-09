@@ -23,7 +23,9 @@ function wrapDescriptor(descriptor, operationMember) {
 }
 
 export function operation(operationHost, operationMember, descriptor) {
+  mm(operationHost, operationMember, descriptor);
   const f = descriptor.value;
+
   if (typeof descriptor.value === "function") {
     descriptor.value = function (...args) {
       const facet = this;
@@ -31,22 +33,34 @@ export function operation(operationHost, operationMember, descriptor) {
       options.logging && log(facet, operationMember, args, true);
       sendEvent(facet, operationMember, args, false);
 
-      const actionMap = (facet[symbols.actionMap] || {})[operationMember];
-      const callbacks = new Callbacks(actionMap ?? {}, this, args);
-      pushCallbacks(callbacks);
-      callbacks.enter();
-
       const handlers = facet[symbols.operationHandlers];
       const returnValue =
         handlers && handlers[operationMember]
           ? handlers[operationMember](...args)
           : f.bind(this)(...args);
 
-      callbacks.exit();
-      popCallbacks();
-
       sendEvent(facet, operationMember, args, true);
       options.logging && log(facet, operationMember, args, false);
+
+      return returnValue;
+    };
+  }
+  return wrapDescriptor(descriptor, operationMember);
+}
+
+export function mm(operationHost, operationMember, descriptor) {
+  const f = descriptor.value;
+  if (typeof descriptor.value === "function") {
+    descriptor.value = function (...args) {
+      const callbackMap = (this[symbols.callbackMap] || {})[operationMember];
+      const callbacks = new Callbacks(callbackMap ?? {}, this, args);
+      pushCallbacks(callbacks);
+      callbacks.enter();
+
+      const returnValue = f.bind(this)(...args);
+
+      callbacks.exit();
+      popCallbacks();
 
       return returnValue;
     };
