@@ -13,6 +13,7 @@ export class Callbacks<FuncT extends (...a: any) => any> {
   callbacks: FunctionMap<FuncT>;
   self: any;
   args: Parameters<FuncT>;
+  queue: Array<Function> = [];
 
   constructor(callbacks: FunctionMap<FuncT>, self: any, args) {
     this.callbacks = callbacks;
@@ -20,14 +21,7 @@ export class Callbacks<FuncT extends (...a: any) => any> {
     this.args = args;
   }
 
-  exec(label: string, options: any) {
-    this._exec(label + "_pre", { ...options, optional: true });
-    const result = this._exec(label, options);
-    this._exec(label + "_post", { ...options, optional: true });
-    return result;
-  }
-
-  _exec(label: string, options: any) {
+  _schedule(label, options: any) {
     const callbacks = this.callbacks[label];
 
     if (callbacks === undefined) {
@@ -37,19 +31,33 @@ export class Callbacks<FuncT extends (...a: any) => any> {
       return undefined;
     }
 
+    callbacks.forEach((f) => this.queue.push(f));
+  }
+
+  exec(label: string, options: any) {
+    this._schedule(label + "_pre", { ...options, optional: true });
+    this._schedule(label, options);
+    const result = this._exec();
+    this._schedule(label + "_post", { ...options, optional: true });
+    return result;
+  }
+
+  _exec() {
     var result = undefined;
-    callbacks.forEach((f) => {
+    this.queue.forEach((f) => {
       result = f.bind(this.self)(...this.args);
     });
+    this.queue = [];
     return result;
   }
 
   enter() {
-    return this._exec("enter", { optional: true });
+    this._schedule("enter", { optional: true });
   }
 
   exit() {
-    return this._exec("exit", { optional: true });
+    this._schedule("exit", { optional: true });
+    this._exec();
   }
 }
 
