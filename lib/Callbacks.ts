@@ -1,21 +1,22 @@
 import { symbols } from "../internal/symbols";
 import { getOrCreate } from "../internal/utils";
 
-export type ToAny<FuncT extends (...a: any) => any> = (
+export type ToAny<FacetT, FuncT extends (this: FacetT, ...a: any) => any> = (
+  this: FacetT,
   ...a: Parameters<FuncT>
 ) => any;
 
-type FunctionMap<FuncT extends (...a: any) => any> = {
-  [label: string]: ToAny<FuncT>[];
+type FunctionMap<FacetT, FuncT extends (this: FacetT, ...a: any) => any> = {
+  [label: string]: ToAny<FacetT, FuncT>[];
 };
 
-export class Callbacks<FuncT extends (...a: any) => any> {
-  callbacks: FunctionMap<FuncT>;
+export class Callbacks<FacetT, FuncT extends (...a: any) => any> {
+  callbacks: FunctionMap<FacetT, FuncT>;
   self: any;
   args: Parameters<FuncT>;
   queue: Array<Function> = [];
 
-  constructor(callbacks: FunctionMap<FuncT>, self: any, args) {
+  constructor(callbacks: FunctionMap<FacetT, FuncT>, self: any, args) {
     this.callbacks = callbacks;
     this.self = self;
     this.args = args;
@@ -37,12 +38,12 @@ export class Callbacks<FuncT extends (...a: any) => any> {
   exec(label: string, options: any) {
     this._schedule(label + "_pre", { ...options, optional: true });
     this._schedule(label, options);
-    const result = this._exec();
+    const result = this.flush();
     this._schedule(label + "_post", { ...options, optional: true });
     return result;
   }
 
-  _exec() {
+  flush() {
     var result = undefined;
     this.queue.forEach((f) => {
       result = f.bind(this.self)(...this.args);
@@ -57,7 +58,7 @@ export class Callbacks<FuncT extends (...a: any) => any> {
 
   exit() {
     this._schedule("exit", { optional: true });
-    this._exec();
+    this.flush();
   }
 }
 
@@ -69,7 +70,7 @@ const _setCallbacks = <
 >(
   facet: FacetT,
   operationMember: K,
-  callbackMap: FunctionMap<FacetT[K]>
+  callbackMap: FunctionMap<FacetT, FacetT[K]>
 ) => {
   const callbackByOperationName = getOrCreate(
     facet,
@@ -83,7 +84,7 @@ export const setCallbacks = <FacetT extends PartialMap<FacetT>>(
   facet: FacetT,
   callbacksByOperationMember: Partial<
     {
-      [K in keyof FacetT]: FunctionMap<FacetT[K]>;
+      [K in keyof FacetT]: FunctionMap<FacetT, FacetT[K]>;
     }
   >
 ) => {
@@ -100,8 +101,12 @@ export const getCallbacks = () => {
   return callbacks;
 };
 
-export const exec = (label: string, options: any = undefined) => {
-  return getCallbacks().exec(label, options);
+export const exec = (label: string | undefined, options: any = undefined) => {
+  const callbacks = getCallbacks();
+  if (label === undefined) {
+    return callbacks.flush();
+  }
+  return callbacks.exec(label, options);
 };
 
 const stack: any[] = [];
