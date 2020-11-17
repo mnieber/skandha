@@ -26,22 +26,31 @@ export function operation(operationHost, operationMember, descriptor) {
   mm(operationHost, operationMember, descriptor);
   const f = descriptor.value;
 
+  function getHandler(facet) {
+    const handlers = facet[symbols.operationHandlers];
+    return handlers && handlers[operationMember]
+      ? handlers[operationMember]
+      : f;
+  }
+
+  function pre(facet, args) {
+    options.logging && log(facet, operationMember, args, true);
+    sendEvent(facet, operationMember, args, false);
+  }
+
+  function post(facet, args) {
+    sendEvent(facet, operationMember, args, true);
+    options.logging && log(facet, operationMember, args, false);
+  }
+
   if (typeof descriptor.value === "function") {
     descriptor.value = function (...args) {
-      const facet = this;
+      pre(this, args);
 
-      options.logging && log(facet, operationMember, args, true);
-      sendEvent(facet, operationMember, args, false);
+      const handler = getHandler(this).bind(this);
+      const returnValue = handler(...args);
 
-      const handlers = facet[symbols.operationHandlers];
-      const returnValue =
-        handlers && handlers[operationMember]
-          ? handlers[operationMember](...args)
-          : f.bind(this)(...args);
-
-      sendEvent(facet, operationMember, args, true);
-      options.logging && log(facet, operationMember, args, false);
-
+      post(this, args);
       return returnValue;
     };
   }
@@ -50,18 +59,21 @@ export function operation(operationHost, operationMember, descriptor) {
 
 export function mm(operationHost, operationMember, descriptor) {
   const f = descriptor.value;
+
+  function getCallbacks(facet, args) {
+    const callbackMap = (facet[symbols.callbackMap] || {})[operationMember];
+    const callbacks = new Callbacks(callbackMap ?? {}, facet, args);
+    pushCallbacks(callbacks);
+    return callbacks;
+  }
+
   if (typeof descriptor.value === "function") {
     descriptor.value = function (...args) {
-      const callbackMap = (this[symbols.callbackMap] || {})[operationMember];
-      const callbacks = new Callbacks(callbackMap ?? {}, this, args);
-      pushCallbacks(callbacks);
+      const callbacks = getCallbacks(this, args);
       callbacks.enter();
-
       const returnValue = f.bind(this)(...args);
-
       callbacks.exit();
       popCallbacks();
-
       return returnValue;
     };
   }
