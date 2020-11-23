@@ -8,14 +8,14 @@ aspects, as in aspect oriented programming), then out-of-the-box solutions often
 especially true when the programmer is asked to work with data-structures that are to tightly coupled to a
 particular framework (for example: Qt).
 
-FacilityJS proposes an alternative solution (somewhat inspired by Erlang) that aims to let the programmer re-use existing logic, without being forced to use particular data structures everywhere. It let's the programmer map
+Facility proposes an alternative solution (somewhat inspired by Erlang) that aims to let the programmer re-use existing logic, without being forced to use particular data structures everywhere. It let's the programmer map
 their custom data-structures on a set of minimal interfaces (called facets) and set up policies that determine how they interact. When these interfaces are truly minimal, they can be generic, which leads to better code reuse.
 
 ## Use of MobX
 
-The FacilityJS library works best when it's used in combination with MobX. However, it's possible to use it
-without this dependency. For this reason, there are two main libraries: facet and facet-mobx. In this README
-I will indicate which functionality depends on MobX.
+The Facility library works best when it's used in combination with MobX. However, it's possible to use it
+without this dependency. For this reason, there are two main libraries: facility and facility-mobx. In this
+README I will indicate which functionality depends on MobX.
 In general, when the `@observable` decorator is used on a data member, you can use the same code without this
 decorator. You only need this decorator when you want to react automatically to data changes using MobX.
 
@@ -31,7 +31,7 @@ See this [blog post](https://mnieber.github.io/react/2019/11/27/facet-based-deve
 
 # Explanation
 
-The FacilityJS library will be explained using some examples that progressively introduce various concepts
+The Facility library will be explained using some examples that progressively introduce various concepts
 and functions. The example shows how to add reusable selection and highlight behaviour to a container with
 Todo items. Note that you may want to skip the Details sections.
 
@@ -82,7 +82,7 @@ Notes:
     }
 ```
 
-## The mapDatas function (part of facet-mobx)
+## The mapDatas function (part of facility-mobx)
 
 An important way in which facets can interact is by mapping data from one facet field onto a different
 facet field. For example, we may want to fill the `items` member of `Selection` by looking up objects in
@@ -117,7 +117,7 @@ In the example below, we map `selection.ids` and `inputs.todoItemById` onto `sel
     }
 ```
 
-Note: we will see this particular data mapping again later, as the `selectionActsOnItems` function.
+Note: we will see this particular data mapping again later, as the `selectionActsOnItems` policy function.
 
 ### Details
 
@@ -138,9 +138,9 @@ MobX.extendObservable(
 Sometimes, using `MobX.extendObservable` creates a cycle that MobX will complain about. In that case, one can
 use `relayDatas`, which has the same signature as `mapDatas` but is implemented using `MobX.reaction`.
 
-## Adding behaviour to Facets using callback functions
+## Adding behaviour to facets using callback functions
 
-We will now add a `selectItem` function to the `Selection` facet. We aim for the following:
+We will now add a `select` function to the `Selection` facet. We aim for the following:
 
 - we don't want to hard-code how selection is done. Instead, we want to give the client some freedom over how
   this works. For example, in some cases we want to select ranges with the shift key, but in other cases
@@ -148,12 +148,12 @@ We will now add a `selectItem` function to the `Selection` facet. We aim for the
 - we want to allow the client to setup additional behaviour that happens when an item is selected. For example,
   we may want to also highlight the selected item
 
-To achieve these aims we will base the `selectItem`` function on an aspect oriented framework described
+To achieve these aims we will base the `select`` function on an aspect oriented framework described
 here: <url here>. Specifically, we will:
 
 - add members `selectableIds` and `anchorId` to the `Selection` facet.
-- add a `selectItem` function to `Selection` that receives the id of the newly selected item and
-  sets the new contents of `selection.ids`. The `selectItem` function will be a Template Method that triggers a callback function to do the actual work.
+- add a `select` function to `Selection` that receives the id of the newly selected item and
+  sets the new contents of `selection.ids`. The `select` function will be a Template Method that triggers a callback function to do the actual work.
 - (in a next step, described later) install handlers for this callback in the constructor of `TodosCtr`.
   These handlers will take care of updating the selection and highlighting the selected item.
 
@@ -166,7 +166,7 @@ export class Selection<ItemT> {
   @observable anchorId: string;
   @observable items?: Array<ItemT>;
 
-  @operation selectItem({ itemId, isShift, isCtrl }) {
+  @operation select({ itemId, isShift, isCtrl }) {
     if (!this.selectableIds.contains(itemId)) {
       throw Error(`Invalid id: ${itemId}`);
     }
@@ -188,10 +188,10 @@ We will make the following changes to `TodosCtr`:
 The `TodoListContainer` now looks like this:
 
 ```
-import { Selection, handleSelectItem } from 'facet-mobx/facets/Selection';
+import { Selection, handleSelectItem } from 'facility-mobx/facets/Selection';
 // other imports omitted
 
-class ToDoListContainer {
+class TodosCtr {
   @facet selection: Selection = new Selection();
   @facet highlight: Highlight = new Highlight();
   @facet inputs: Inputs = new Inputs();
@@ -203,8 +203,8 @@ class ToDoListContainer {
   }
 
   _installActions() {
-    installActions(this.selection, {
-      selectItem: {
+    setCallbacks(this.selection, {
+      select: {
         // install the default selection handler as a callback
         selectItem: [handleSelectItem],
         // install a rule that ensures that selected items are highlighted
@@ -226,7 +226,7 @@ Notes:
 
 0. The call to `registerFacets` is mandatory. It creates a back-reference to the container in each facet
    instance.
-1. The `installActions` function comes from <AOP ref here>. We use it here to install callback functions that
+1. The `setCallbacks` function comes from <AOP ref here>. We use it here to install callback functions that
    handle selection and make sure that selected items are highlighted.
 1. The `selectionActsOnItems` function is a reusable helper that provides a data mapping from an "itemById"
    field onto the `selection.items` field. It's implemented as follows:
@@ -258,12 +258,12 @@ Let's review what we've achieved:
 1. Our container uses reusable classes for Selection and Highlight.
 2. We've set up interaction between the Selection, Highlight and Inputs facets using mapping functions that
    are either reusable (`selectionActsOnItems`, `highlightFollowsSelection`) or generic (`mapDatas`).
-3. The interations between facets are made explicit in the TodosCtr class. This makes the interactions easier to
+3. The interactions between facets are made explicit in the TodosCtr class. This makes the interactions easier to
    discover than if they had been inserted directly into the facets.
 
 ## Logging
 
-The FacilityJS library allows you to inspect each facet before and after calling an operation. An operation is any
+The Facility library allows you to inspect each facet before and after calling an operation. An operation is any
 facet member function that is decorated with @operation. You can turn on logging as follows:
 
 ```
@@ -290,6 +290,8 @@ The logging looks similar to what you are used to from Redux:
 - all decorated data members of each facet in the container are included in the log
 - log entries are nested so that you can see how operation calls are nested
 
+TODO: add image.
+
 ## Overriding an operation
 
 It's also possible to completely override the body of an operation in an already instantiated facet. This can be
@@ -298,7 +300,7 @@ useful when the default implementation of the operation is not suitable:
 ```
 handle(
   ctr.selection,
-  "selectItem",
+  "select",
   ({itemId, isShift, isCtrl}) => { /* do something */},
 );
 ```
@@ -311,7 +313,7 @@ is done by connecting to a signal:
 ```
 listen(
   ctr.selection,
-  "selectItem",
+  "select",
   ({itemId, isShift, isCtrl}) => { /* do something */},
   { after: true,  // this is the default option }
 );
@@ -323,7 +325,7 @@ signal will be received before the operation is called.
 ## Signalling: other information
 
 The signalling mechanism that is used to notify listeners of operations can also be used to signal other
-kinds of information. The `sendMsg` function can be used to emit information:
+kinds of information. The `sendMsg` function can be used to emit any information:
 
 ```
 function foo(ctr: TodosCtr) {
