@@ -36,10 +36,14 @@ export class Callbacks<FacetT, FuncT extends (...a: any) => any> {
   }
 
   exec(label: string, options: any) {
-    this._schedule(label + "_pre", { ...options, optional: true });
+    if (!label.endsWith("_pre")) {
+      this._schedule(label + "_pre", { ...options, optional: true });
+    }
     this._schedule(label, options);
     const result = this.flush();
-    this._schedule(label + "_post", { ...options, optional: true });
+    if (!label.endsWith("_post")) {
+      this._schedule(label + "_post", { ...options, optional: true });
+    }
     return result;
   }
 
