@@ -9,6 +9,7 @@
   "types": "index.d.ts",
   "prepublish": "tsc",
   "dependencies": {
+    "aspiration": "^0.0.1",
     "micro-signals": "^2.1.0"
   },
   "devDependencies": {
