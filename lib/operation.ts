@@ -2,7 +2,7 @@ import { options } from "../internal/options";
 import { symbols } from "../internal/symbols";
 import { log } from "../internal/logging";
 import { sendEvent } from "../internal/events";
-import { Callbacks, pushCallbacks, popCallbacks } from "./Callbacks";
+import { host } from "aspiration";
 
 // Do some magic to ensure that the member function
 // is bound to it's host.
@@ -23,7 +23,7 @@ function wrapDescriptor(descriptor, operationMember) {
 }
 
 export function operation(operationHost, operationMember, descriptor) {
-  mm(operationHost, operationMember, descriptor);
+  host(operationHost, operationMember, descriptor);
   const f = descriptor.value;
 
   function getHandler(facet) {
@@ -51,29 +51,6 @@ export function operation(operationHost, operationMember, descriptor) {
       const returnValue = handler(...args);
 
       post(this, args);
-      return returnValue;
-    };
-  }
-  return wrapDescriptor(descriptor, operationMember);
-}
-
-export function mm(operationHost, operationMember, descriptor) {
-  const f = descriptor.value;
-
-  function getCallbacks(facet, args) {
-    const callbackMap = (facet[symbols.callbackMap] || {})[operationMember];
-    const callbacks = new Callbacks(callbackMap ?? {}, facet, args);
-    pushCallbacks(callbacks);
-    return callbacks;
-  }
-
-  if (typeof descriptor.value === "function") {
-    descriptor.value = function (...args) {
-      const callbacks = getCallbacks(this, args);
-      callbacks.enter();
-      const returnValue = f.bind(this)(...args);
-      callbacks.exit();
-      popCallbacks();
       return returnValue;
     };
   }

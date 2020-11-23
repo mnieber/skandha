@@ -1,10 +1,9 @@
 export const symbols = {
-  eventSignal: Symbol("facetEventSignal"),
-  operationHandlers: Symbol("facetOperationHandlers"),
-  dataMembers: Symbol("facetDataMembers"),
-  facetMembers: Symbol("facetFacetMembers"),
-  parentContainer: Symbol("facetParentContainer"),
-  callbackMap: Symbol("facetCallbackMap"),
+  eventSignal: Symbol("facilityEventSignal"),
+  operationHandlers: Symbol("facilityOperationHandlers"),
+  dataMembers: Symbol("facilityDataMembers"),
+  facetMembers: Symbol("facilityFacetMembers"),
+  parentContainer: Symbol("facilityParentContainer"),
 };
 
 export function symbolName(symbol) {
