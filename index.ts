@@ -6,7 +6,7 @@ export { options } from "./internal/options";
 export { listen } from "./lib/listen";
 export { sendMsg, subscribe } from "./lib/msg";
 export { operation, async_opn } from "./lib/operation";
-export { facet, registerFacets, getFacet } from "./lib/facet";
+export { facet, registerFacets, get } from "./lib/facet";
 export { installPolicies } from "./lib/install";
 export { exec, optional, setCallbacks, getCallbacks, ret } from "aspiration";
 

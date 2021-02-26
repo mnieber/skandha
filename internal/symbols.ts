@@ -4,6 +4,7 @@ export const symbols = {
   dataMembers: Symbol("facilityDataMembers"),
   facetMembers: Symbol("facilityFacetMembers"),
   parentContainer: Symbol("facilityParentContainer"),
+  facetByFacetClassName: Symbol("facilityFacetByFacetClassName"),
 };
 
 export function symbolName(symbol) {

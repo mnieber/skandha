@@ -4,24 +4,6 @@ import { log } from "../internal/logging";
 import { sendEvent } from "../internal/events";
 import { host } from "aspiration";
 
-// Do some magic to ensure that the member function
-// is bound to it's host.
-// Copied from the bind-decorator npm package.
-function wrapDescriptor(descriptor, operationMember) {
-  return {
-    configurable: true,
-    get() {
-      const bound = descriptor.value.bind(this);
-      Object.defineProperty(this, operationMember, {
-        value: bound,
-        configurable: true,
-        writable: true,
-      });
-      return bound;
-    },
-  };
-}
-
 export function operation(operationHost, operationMember, descriptor) {
   host(operationHost, operationMember, descriptor);
   const f = descriptor.value;
@@ -54,7 +36,8 @@ export function operation(operationHost, operationMember, descriptor) {
       return returnValue;
     };
   }
-  return wrapDescriptor(descriptor, operationMember);
+
+  return descriptor;
 }
 
 export function async_opn(operationHost, operationMember, descriptor) {
@@ -78,5 +61,5 @@ export function async_opn(operationHost, operationMember, descriptor) {
       return Promise.resolve(returnValue);
     };
   }
-  return wrapDescriptor(descriptor, operationMember);
+  return descriptor;
 }
