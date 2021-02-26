@@ -2,10 +2,8 @@ import { options } from "../internal/options";
 import { symbols } from "../internal/symbols";
 import { log } from "../internal/logging";
 import { sendEvent } from "../internal/events";
-import { host } from "aspiration";
 
 export function operation(operationHost, operationMember, descriptor) {
-  host(operationHost, operationMember, descriptor);
   const f = descriptor.value;
 
   function getHandler(facet) {

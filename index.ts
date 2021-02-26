@@ -8,7 +8,6 @@ export { sendMsg, subscribe } from "./lib/msg";
 export { operation, async_opn } from "./lib/operation";
 export { facet, registerFacets, get } from "./lib/facet";
 export { installPolicies } from "./lib/install";
-export { exec, optional, setCallbacks, getCallbacks, ret } from "aspiration";
 
 export type ClassT = any;
 export type MemberNameT = string;
