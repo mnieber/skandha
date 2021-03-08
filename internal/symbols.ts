@@ -1,6 +1,4 @@
 export const symbols = {
-  eventSignal: Symbol("facilityEventSignal"),
-  operationHandlers: Symbol("facilityOperationHandlers"),
   dataMembers: Symbol("facilityDataMembers"),
   facetMembers: Symbol("facilityFacetMembers"),
   parentContainer: Symbol("facilityParentContainer"),

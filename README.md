@@ -226,23 +226,6 @@ Let's review what we've achieved:
 5. The interactions between facets are made explicit in the TodosCtr class. This makes the interactions easier to
    discover than if they had been inserted directly into the facets.
 
-### Signalling: operations
-
-When calling an operation on a facet, it's possible to notify clients who are outside of the container. This
-is done by connecting to a signal:
-
-```
-listen(
-  ctr.selection,
-  "select",
-  ({itemId, isShift, isCtrl}) => { /* do something */},
-  { after: true,  // this is the default option }
-);
-```
-
-The last argument is a dictionary of options. This argument is optional. If you set `after: false` then the
-signal will be received before the operation is called.
-
 ### Various helper functions
 
 - `facetName(facet)` returns the name of the facet given the facet instance
@@ -251,19 +234,6 @@ signal will be received before the operation is called.
 - `getCtr(facet)` returns the container for a facet
 
 ## Details
-
-### Overriding an operation
-
-It's also possible to completely override the body of an operation in an already instantiated facet. This can be
-useful when the default implementation of the operation is not suitable:
-
-```
-handle(
-  ctr.selection,
-  "select",
-  ({itemId, isShift, isCtrl}) => { /* do something completely different */},
-);
-```
 
 ### Logging
 
@@ -295,31 +265,6 @@ The logging looks similar to what you are used to from Redux:
 - log entries are nested so that you can see how operation calls are nested
 
 TODO: add image.
-
-### Signalling: other information
-
-The signalling mechanism that is used to notify listeners of operations can also be used to signal other
-kinds of information. The `sendMsg` function can be used to emit any information:
-
-```
-function foo(ctr: TodosCtr) {
-  const topic = 'Selection.sizeInformation';
-  const details = {
-    newSize: 1001
-  };
-  sendMsg(ctr.selection, topic, details);
-}
-```
-
-The `subscribe` function is used to subscribe to a topic:
-
-```
-function bar(ctr: TodosCtr) {
-  subscribe(ctr.selection, 'Selection.*', (msg: any) => {
-    console.log(msg.details);
-  };);
-}
-```
 
 ### Implementation of mapDatas
 

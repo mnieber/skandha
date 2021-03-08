@@ -8,9 +8,7 @@
   "license": "MIT",
   "types": "index.d.ts",
   "prepublish": "tsc",
-  "dependencies": {
-    "micro-signals": "^2.1.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "typescript": "^4.0.3"
   }
