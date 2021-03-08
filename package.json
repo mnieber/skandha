@@ -1,6 +1,6 @@
 {
   "name": "facility",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "Create data containers with modular behaviours",
   "main": "index.js",
   "repository": "https://github.com/mnieber/facility.git",
