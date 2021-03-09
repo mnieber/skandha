@@ -1,6 +1,12 @@
 export { facetName, facetClassName, ctrState } from "./internal/logging";
-export { getCtr } from "./internal/ctr";
-export { input, output, data, isDataMember } from "./lib/data";
+export { getCtr, getFacetMemberNames } from "./internal/ctr";
+export {
+  input,
+  output,
+  data,
+  isDataMember,
+  getDataMemberNames,
+} from "./lib/data";
 export { options } from "./internal/options";
 export { operation, async_opn } from "./lib/operation";
 export { facet, registerFacets, get } from "./lib/facet";

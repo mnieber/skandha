@@ -13,5 +13,9 @@ export function isDataMember(facetClass, prop) {
   return facetDatas && facetDatas[prop];
 }
 
+export function getDataMemberNames(facetClass) {
+  return Object.keys(facetClass[symbols.dataMembers] || {});
+}
+
 export const input = data;
 export const output = data;

@@ -7,3 +7,7 @@ export function getCtr<CtrT = any>(facet): CtrT {
 export function setCtr(facet, ctr) {
   facet[symbols.parentContainer] = ctr;
 }
+
+export function getFacetMemberNames(ctr) {
+  return ctr.constructor[symbols.facetMembers] || [];
+}
