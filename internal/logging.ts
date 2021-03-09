@@ -40,8 +40,9 @@ export function log(facet, operationMember, args, start) {
 
 export function ctrState(ctr) {
   if (ctr) {
-    return ctr.constructor[symbols.facetMembers].reduce((acc, facetMember) => {
-      const facet = ctr[facetMember];
+    const facetMemberNames = ctr.constructor[symbols.facetMembers];
+    return facetMemberNames.reduce((acc, facetMemberName) => {
+      const facet = ctr[facetMemberName];
       const facetClass = facet.constructor;
       const facetDatas = facetClass[symbols.dataMembers];
       const facetState = facetDatas
@@ -58,7 +59,7 @@ export function ctrState(ctr) {
           }, {})
         : {};
 
-      return { ...acc, [facetMember]: facetState };
+      return { ...acc, [facetMemberName]: facetState };
     }, {});
   }
 }
