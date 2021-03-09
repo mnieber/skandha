@@ -148,10 +148,11 @@ class TodosCtr {
 
   constructor() {
     registerFacets(this);
-    this._installActions();
+    this._setCallbacks();
+    makeCtrObservable(this);  // Needed if MobX is used
   }
 
-  _installActions() {
+  _setCallbacks() {
     const ctr = this;
 
     setCallbacks(this.selection, {
@@ -181,11 +182,12 @@ class TodosCtr {
 
   constructor() {
     registerFacets(this);
-    this._installActions();
+    this._setCallbacks();
     this._applyPolicies();
+    makeCtrObservable(this);  // Needed if MobX is used
   }
 
-  _installActions() {
+  _setCallbacks() {
   // ...
   }
 
@@ -202,6 +204,8 @@ Notes:
 
 0. The call to `registerFacets` is mandatory. It creates a back-reference to the container in each facet
    instance.
+1. The call to `makeCtrObservable` will call `makeObservable` (from MobX) on the container class and on all
+   the facets that it contains. Note that you should not call `makeObservable` yourself on any of the facets.
 1. The `setCallbacks` function comes from [Aspiration](http://github.com/mnieber/aspiration). We use it here to
    install callback functions that handle selection and make sure that selected items are highlighted.
 1. The `selectionActsOnItems` function is a reusable helper that provides a data mapping from an "itemById"
