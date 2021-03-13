@@ -1,20 +1,25 @@
-import { getOrCreate } from "../internal/utils";
-import { symbols } from "../internal/symbols";
+import { getFacetClassAdmin } from "../internal/utils";
 
-export function data(dataHost, dataMember, descriptor: any = undefined) {
-  const facetClass = dataHost.constructor;
-  const datas = getOrCreate(facetClass, symbols.dataMembers, () => ({}));
-  datas[dataMember] = true;
+export function log(dataHost, dataMember, descriptor: any = undefined) {
+  const facetClassAdmin = getFacetClassAdmin(dataHost.constructor);
+  facetClassAdmin.loggedMembers = facetClassAdmin.loggedMembers ?? {};
+  facetClassAdmin.loggedMembers[dataMember] = true;
   return descriptor;
 }
 
-export function isDataMember(facetClass, prop) {
-  const facetDatas = facetClass[symbols.dataMembers];
-  return facetDatas && facetDatas[prop];
+export function data(dataHost, dataMember, descriptor: any = undefined) {
+  const facetClassAdmin = getFacetClassAdmin(dataHost.constructor);
+  facetClassAdmin.dataMembers = facetClassAdmin.dataMembers ?? {};
+  facetClassAdmin.dataMembers[dataMember] = true;
+  return log(dataHost, dataMember, descriptor);
 }
 
-export function getDataMemberNames(facetClass) {
-  return Object.keys(facetClass[symbols.dataMembers] || {});
+export function getLoggedMemberNames(facet) {
+  return Object.keys(getFacetClassAdmin(facet.constructor).loggedMembers ?? {});
+}
+
+export function getDataMemberNames(facet) {
+  return Object.keys(getFacetClassAdmin(facet.constructor).dataMembers ?? {});
 }
 
 export const input = data;

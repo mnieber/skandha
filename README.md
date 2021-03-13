@@ -11,19 +11,11 @@ particular framework (for example: Qt).
 Facility proposes an alternative solution (somewhat inspired by Erlang) that aims to let the programmer re-use existing logic, without being forced to use particular data structures everywhere. It let's the programmer map
 their custom data-structures on a set of minimal interfaces (called facets) and set up policies that determine how they interact. When these interfaces are truly minimal, they can be generic, which leads to better code reuse.
 
-## Use of MobX
-
-The Facility library works best when it's used in combination with MobX. However, it's possible to use it
-without this dependency. For this reason, there are two main libraries: facility and facility-mobx. In this
-README I will indicate which functionality depends on MobX.
-In general, when the `@observable` decorator is used on a data member, you can use the same code without this
-decorator. You only need this decorator when you want to react automatically to data changes using MobX.
-
 ## Links
 
 - The [facility](http://github.com/mnieber/facility) library contains the basic building blocks
-- The [facility-mobx](http://github.com/mnieber/facility-mobx) library contains the bindings to MobX, as well as a collection of facet classes for
-  selection, highlight, filtering, addition, etc.
+- The [facility-facets](http://github.com/mnieber/facility-facets) library contains useful facets such as selection, highlight, filtering, addition, etc.
+- The [facility-mobx](http://github.com/mnieber/facility-mobx) library contains bindings to MobX
 - The [aspiration](http://github.com/mnieber/aspiration) library handles aspect oriented programming (AOP)
 
 ## Explanation
@@ -54,7 +46,7 @@ Our initial code is:
     }
 
     class Inputs {
-      @observable todoItemById = {};
+      todoItemById = {};
       static get = (ctr: any): Inputs => ctr.inputs;
     }
 
@@ -77,7 +69,7 @@ Notes:
     }
 ```
 
-### Connecting Selection to Inputs using mapDatas (part of facility-mobx)
+### Connecting Selection to Inputs using mapDatas
 
 We now have skeletons for our reusable `Selection` and `Highlight` facets, and we have a simple `Inputs` facet
 (that we don't intend to reuse) with "todo" data that we wish to select or highlight. The next steps are to:
@@ -89,10 +81,10 @@ We now have skeletons for our reusable `Selection` and `Highlight` facets, and w
 
 ```
     class Selection<ItemT> {
-      @observable selectableIds?: Array<string>;
-      @observable ids: Array<string> = [];
-      @observable anchorId: string;
-      @observable items?: Array<ItemT>;
+      @input selectableIds?: Array<string>;
+      @data ids: Array<string> = [];
+      @data anchorId: string;
+      @output items?: Array<ItemT>;
 
       static get = (ctr: any): Selection => ctr.selection;
     }
@@ -149,7 +141,6 @@ class TodosCtr {
   constructor() {
     registerFacets(this);
     this._setCallbacks();
-    makeCtrObservable(this);  // Needed if MobX is used
   }
 
   _setCallbacks() {
@@ -160,7 +151,7 @@ class TodosCtr {
         // install the default selection handler as a callback
         selectItem(this: Selection_select): {
           handleSelectItem(ctr.selection, this.selectionParams);
-          MobXPolicies.highlightFollowsSelection(ctr.selection, this.selectionParams);
+          FacetPolicies.highlightFollowsSelection(ctr.selection, this.selectionParams);
         },
       }
     });
@@ -174,7 +165,7 @@ class TodosCtr {
 Next we will install a policy in `TodosCtr` that fills `selection.selectableIds` based on `inputs.todoItemById`.
 
 ```
-import { Selection, handleSelectItem } from 'facility-mobx/facets/Selection';
+import { Selection, handleSelectItem } from 'facility-facets/Selection';
 // other imports omitted
 
 class TodosCtr {
@@ -184,7 +175,6 @@ class TodosCtr {
     registerFacets(this);
     this._setCallbacks();
     this._applyPolicies();
-    makeCtrObservable(this);  // Needed if MobX is used
   }
 
   _setCallbacks() {
@@ -192,7 +182,7 @@ class TodosCtr {
   }
 
   _applyPolicies() {
-    // Create mapping onto selection.selectableIds. Remember that mapDatas depends on MobX
+    // Create mapping onto selection.selectableIds.
     mapDatas([[Inputs, 'todoItemById']], [Selection, 'selectableIds'], getIds)(this);
     // Map onto selection.items. See explanation below
     selectionActsOnItems([Inputs, "todoItemById"])(this);
@@ -204,8 +194,6 @@ Notes:
 
 0. The call to `registerFacets` is mandatory. It creates a back-reference to the container in each facet
    instance.
-1. The call to `makeCtrObservable` will call `makeObservable` (from MobX) on the container class and on all
-   the facets that it contains. Note that you should not call `makeObservable` yourself on any of the facets.
 1. The `setCallbacks` function comes from [Aspiration](http://github.com/mnieber/aspiration). We use it here to
    install callback functions that handle selection and make sure that selected items are highlighted.
 1. The `selectionActsOnItems` function is a reusable helper that provides a data mapping from an "itemById"
@@ -255,8 +243,8 @@ the difference in name is just to help the reader understand the intention behin
 
 ```
 export class Selection<ItemT> {
-  @observable @input selectableIds?: Array<string>;  // this is logged
-  @observable ids: Array<string> = [];               // this is not logged
+  @input selectableIds?: Array<string>;  // this is logged
+  foo: Array<string> = [];               // this is not logged
 
   // other members omitted
 }
@@ -272,19 +260,16 @@ TODO: add image.
 
 ### Implementation of mapDatas
 
-Internally, `mapDatas` uses `MobX.extendObservable` to create a `@computed` property on the target instance that returns data from the source instance. In the above example, the use of `mapDatas` to fill
+Internally, `mapDatas` creates a property on the target instance that returns data from the source instance. In the above example, the use of `mapDatas` to fill
 ``selection.selectableIds` is equivalent to calling
 
 ```
-MobX.extendObservable(
+Object.defineProperty(
   ctr.selection,
   {
-    get selectableIds() {
-      return lookUp(ctr.selection.ids, ctr.inputs.todoItemById);
+    selectableIds: {
+      get: lookUp(ctr.selection.ids, ctr.inputs.todoItemById)
     }
   }
 );
 ```
-
-Sometimes, using `MobX.extendObservable` creates a cycle that MobX will complain about. In that case, one can
-use `relayDatas`, which has the same signature as `mapDatas` but is implemented using `MobX.reaction`.

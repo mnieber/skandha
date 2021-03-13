@@ -1,5 +1,5 @@
-import { symbols } from "./symbols";
-import { getCtr } from "./ctr";
+import { getLoggedMemberNames } from "../lib/data";
+import { getCtr, getFacetMemberNames } from "../lib/ctr";
 import { options } from "./options";
 
 export function facetClassName(facetClass) {
@@ -8,7 +8,8 @@ export function facetClassName(facetClass) {
 
 export function facetName(facet) {
   const ctr = getCtr(facet);
-  return ctr.constructor.name + "/" + facet.constructor.name;
+  const prefix = ctr ? ctr.constructor.name + "/" : "";
+  return prefix + facet.constructor.name;
 }
 
 function camelToSnake(string) {
@@ -24,42 +25,40 @@ export const opName = (operationMember) =>
 
 export function log(facet, operationMember, args, start) {
   const ctr = getCtr(facet);
+  const getState = ctr ? () => ctrState(ctr) : () => facetState(facet);
   const operationName = opName(operationMember);
   const label = facetName(facet) + "." + operationName;
 
   if (start) {
     console.group(label);
     console.log("%c           args: ", "color: gray", args);
-    console.log("%c     state", "color: gray", ctrState(ctr));
+    console.log("%c     state", "color: gray", getState());
   } else {
-    console.log("%c     next", "color: gray", ctrState(ctr));
+    console.log("%c     next", "color: gray", getState());
     // @ts-ignore
     console.groupEnd(label);
   }
 }
 
+export function facetState(facet) {
+  return getLoggedMemberNames(facet).reduce((acc, loggedMember) => {
+    try {
+      const data = options.formatObject(facet[loggedMember]);
+      return {
+        ...acc,
+        [loggedMember]: data,
+      };
+    } catch {
+      return acc;
+    }
+  }, {});
+}
+
 export function ctrState(ctr) {
   if (ctr) {
-    const facetMemberNames = ctr.constructor[symbols.facetMembers];
-    return facetMemberNames.reduce((acc, facetMemberName) => {
+    return getFacetMemberNames(ctr).reduce((acc, facetMemberName) => {
       const facet = ctr[facetMemberName];
-      const facetClass = facet.constructor;
-      const facetDatas = facetClass[symbols.dataMembers];
-      const facetState = facetDatas
-        ? Object.keys(facetDatas).reduce((acc, dataMember) => {
-            try {
-              const data = options.formatObject(facet[dataMember]);
-              return {
-                ...acc,
-                [dataMember]: data,
-              };
-            } catch {
-              return acc;
-            }
-          }, {})
-        : {};
-
-      return { ...acc, [facetMemberName]: facetState };
+      return { ...acc, [facetMemberName]: facetState(facet) };
     }, {});
   }
 }
