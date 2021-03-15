@@ -1,9 +1,9 @@
 {
-  "name": "facility",
   "version": "0.1.1",
+  "name": "skandha",
   "description": "Create data containers with modular behaviours",
   "main": "index.js",
-  "repository": "https://github.com/mnieber/facility.git",
+  "repository": "https://github.com/mnieber/skandha.git",
   "author": "Maarten Nieber",
   "license": "MIT",
   "types": "index.d.ts",

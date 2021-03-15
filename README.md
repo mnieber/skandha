@@ -1,4 +1,4 @@
-# FacilityJS
+# SkandhaJS
 
 ## Rationale
 
@@ -8,19 +8,19 @@ aspects, as in aspect oriented programming), then out-of-the-box solutions often
 especially true when the programmer is asked to work with data-structures that are to tightly coupled to a
 particular framework (for example: Qt).
 
-Facility proposes an alternative solution (somewhat inspired by Erlang) that aims to let the programmer re-use existing logic, without being forced to use particular data structures everywhere. It let's the programmer map
+Skandha proposes an alternative solution (somewhat inspired by Erlang) that aims to let the programmer re-use existing logic, without being forced to use particular data structures everywhere. It let's the programmer map
 their custom data-structures on a set of minimal interfaces (called facets) and set up policies that determine how they interact. When these interfaces are truly minimal, they can be generic, which leads to better code reuse.
 
 ## Links
 
-- The [facility](http://github.com/mnieber/facility) library contains the basic building blocks
-- The [facility-facets](http://github.com/mnieber/facility-facets) library contains useful facets such as selection, highlight, filtering, addition, etc.
-- The [facility-mobx](http://github.com/mnieber/facility-mobx) library contains bindings to MobX
+- The [skandha](http://github.com/mnieber/skandha) library contains the basic building blocks
+- The [skandha-facets](http://github.com/mnieber/skandha-facets) library contains useful facets such as selection, highlight, filtering, addition, etc.
+- The [skandha-mobx](http://github.com/mnieber/skandha-mobx) library contains bindings to MobX
 - The [aspiration](http://github.com/mnieber/aspiration) library handles aspect oriented programming (AOP)
 
 ## Explanation
 
-The Facility library will be explained using some examples that progressively introduce various concepts
+The Skandha library will be explained using some examples that progressively introduce various concepts
 and functions. The example shows how to add reusable selection and highlight behaviour to a container with
 Todo items.
 
@@ -165,7 +165,7 @@ class TodosCtr {
 Next we will install a policy in `TodosCtr` that fills `selection.selectableIds` based on `inputs.todoItemById`.
 
 ```
-import { Selection, handleSelectItem } from 'facility-facets/Selection';
+import { Selection, handleSelectItem } from 'skandha-facets/Selection';
 // other imports omitted
 
 class TodosCtr {
@@ -229,7 +229,7 @@ Let's review what we've achieved:
 
 ### Logging
 
-The Facility library allows you to inspect each facet before and after calling an operation. An operation is any
+The Skandha library allows you to inspect each facet before and after calling an operation. An operation is any
 facet member function that is decorated with @operation. You can turn on logging as follows:
 
 ```
