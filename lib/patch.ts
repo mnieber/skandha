@@ -1,8 +1,7 @@
 import { get } from "./facet";
 import { facetName } from "../internal/logging";
 import { getDataMemberNames } from "./data";
-import { ClassMemberT } from "..";
-import { zip } from "../internal/utils";
+import { GetterT, ClassMemberT } from "..";
 
 export function patchFacet(facet: any, members: any, options?: any) {
   const dataMemberNames = getDataMemberNames(facet);
@@ -26,84 +25,44 @@ export function patchFacet(facet: any, members: any, options?: any) {
   }
 }
 
-function createPatch(
-  patchedFacetClass: any,
-  otherFacetClasses: Array<any>,
-  callback: (...x: any) => any
-) {
-  return (ctr: any) => {
-    const otherFacets = otherFacetClasses.map((facetClass) =>
-      facetClass ? get(facetClass, ctr) : ctr
-    );
-    // @ts-ignore
-    const patch = callback.bind(this)(ctr, ...otherFacets);
-
-    if (patch && patchedFacetClass) {
-      patchFacet(get(patchedFacetClass, ctr), patch);
-    }
-  };
-}
-
-function _check(member, facet) {
-  if (member !== "" && !(member in facet)) {
-    console.error(`No member ${member} in ${facetName(facet)}`);
-  }
-}
-
 export const mapData = (
-  [fromFacetClass, fromMember]: ClassMemberT,
+  getter: GetterT,
   [toFacetClass, toMember]: ClassMemberT,
   transform?: Function
-) => {
-  return createPatch(
-    toFacetClass,
-    [fromFacetClass],
-    (ctr: any, fromFacet: any) => ({
-      [toMember]: {
-        get: () => {
-          _check(fromMember, fromFacet);
-          const context = {
-            ctr,
-            fromClassMember: [fromFacetClass, fromMember],
-            toClassMember: [toFacetClass, toMember],
-            data: fromMember === "" ? fromFacet : fromFacet[fromMember],
-          };
-          return transform ? transform(context.data) : context.data;
-        },
+) => (ctr: any) => {
+  const patch = {
+    [toMember]: {
+      get: () => {
+        const context = {
+          ctr,
+          getter,
+          toClassMember: [toFacetClass, toMember],
+          data: getter(ctr),
+        };
+        return transform ? transform(context.data) : context.data;
       },
-    })
-  );
+    },
+  };
+  patchFacet(get(toFacetClass, ctr), patch);
 };
 
 export const mapDatas = (
-  sources: Array<ClassMemberT>,
+  getters: Array<GetterT>,
   [toFacetClass, toMember]: ClassMemberT,
   transform: Function
-) => {
-  const fromFacetClasses = sources.map((x) => x[0]);
-  const fromMembers = sources.map((x) => x[1]);
-
-  return createPatch(
-    toFacetClass,
-    fromFacetClasses,
-    (ctr: any, ...fromFacets: Array<any>) => ({
-      [toMember]: {
-        get: () => {
-          const datas = zip(fromFacets, fromMembers).map(
-            ([facet, member]: any) => {
-              _check(member, facet);
-              return member === "" ? facet : facet[member];
-            }
-          );
-          const context = {
-            ctr,
-            fromClassMembers: sources,
-            toClassMember: [toFacetClass, toMember],
-            datas: datas,
-          };
-          return transform(...context.datas);
-        },
+) => (ctr: any) => {
+  const patch = {
+    [toMember]: {
+      get: () => {
+        const context = {
+          ctr,
+          getters,
+          toClassMember: [toFacetClass, toMember],
+          datas: getters.map((getter) => getter(ctr)),
+        };
+        return transform(...context.datas);
       },
-    })
-  );
+    },
+  };
+  patchFacet(get(toFacetClass, ctr), patch);
 };

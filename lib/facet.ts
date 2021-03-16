@@ -1,6 +1,7 @@
 import { getFacetMemberNames, setCtr } from "./ctr";
 import { getCtrClassAdmin, getCtrAdmin } from "../internal/utils";
 import { facetClassName } from "../internal/logging";
+import { ClassT, MemberNameT, GetterT, ClassMemberT } from "..";
 
 export function facet(facetHost, facetMember, descriptor = undefined) {
   const ctrClassAdmin = getCtrClassAdmin(facetHost.constructor);
@@ -35,4 +36,15 @@ export function get(facetClass, ctr) {
     );
   }
   return facet;
+}
+
+export function getm<T = any>(classMember: ClassMemberT): GetterT<T> {
+  const f = (ctr: any) => get(classMember[0], ctr)[classMember[1]];
+  f.className = classMember[0].name;
+  f.memberName = classMember[1];
+  return f;
+}
+
+export function cm(facetClass: ClassT, memberName: MemberNameT): ClassMemberT {
+  return [facetClass, memberName];
 }
