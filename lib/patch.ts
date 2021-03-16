@@ -1,4 +1,4 @@
-import { get } from "./facet";
+import { getf } from "./facet";
 import { facetName } from "../internal/logging";
 import { getDataMemberNames } from "./data";
 import { GetterT, ClassMemberT } from "..";
@@ -43,7 +43,7 @@ export const mapData = (
       },
     },
   };
-  patchFacet(get(toFacetClass, ctr), patch);
+  patchFacet(getf(toFacetClass, ctr), patch);
 };
 
 export const mapDatas = (
@@ -64,5 +64,5 @@ export const mapDatas = (
       },
     },
   };
-  patchFacet(get(toFacetClass, ctr), patch);
+  patchFacet(getf(toFacetClass, ctr), patch);
 };

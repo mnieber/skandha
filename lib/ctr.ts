@@ -1,6 +1,6 @@
 import { getCtrClassAdmin, getFacetAdmin } from "../internal/utils";
 
-export function getCtr<CtrT = any>(facet): CtrT {
+export function getc<CtrT = any>(facet): CtrT {
   return getFacetAdmin(facet).parentContainer;
 }
 

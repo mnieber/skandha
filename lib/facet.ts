@@ -28,7 +28,9 @@ export function registerFacets(ctr) {
   });
 }
 
-export function get(facetClass, ctr) {
+export function getf(facetClass: ClassT, ctr?: any) {
+  if (!ctr) return (ctr: any) => getf(facetClass, ctr);
+
   const facet = getCtrAdmin(ctr).facetByFacetClassName?.[facetClass.name];
   if (!facet) {
     console.error(
@@ -39,7 +41,7 @@ export function get(facetClass, ctr) {
 }
 
 export function getm<T = any>(classMember: ClassMemberT): GetterT<T> {
-  const f = (ctr: any) => get(classMember[0], ctr)[classMember[1]];
+  const f = (ctr: any) => getf(classMember[0], ctr)[classMember[1]];
   f.className = classMember[0].name;
   f.memberName = classMember[1];
   return f;

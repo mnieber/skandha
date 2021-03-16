@@ -1,5 +1,5 @@
 export { facetName, facetClassName, ctrState } from "./internal/logging";
-export { getCtr, getFacetMemberNames } from "./lib/ctr";
+export { getc, getFacetMemberNames } from "./lib/ctr";
 export {
   input,
   output,
@@ -11,7 +11,7 @@ export {
 export { mapData, mapDatas, patchFacet } from "./lib/patch";
 export { getOptions, setOptions } from "./internal/options";
 export { operation, getOperationMemberNames } from "./lib/operation";
-export { facet, registerFacets, get, getm, cm } from "./lib/facet";
+export { facet, registerFacets, getm, getf, cm } from "./lib/facet";
 export { installPolicies } from "./lib/install";
 
 export type ClassT = any;

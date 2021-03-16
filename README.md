@@ -37,35 +37,18 @@ with three facets: `Selection`, `Highlight` and `Inputs`. We are aiming for a de
 Our initial code is:
 
 ```
-    class Selection<ItemT> {
-      static get = (ctr: any): Selection => ctr.selection;
-    }
+    class Selection<ItemT> {}
 
-    class Highlight<ItemT> {
-      static get = (ctr: any): Highlight => ctr.highlight;
-    }
+    class Highlight<ItemT> {}
 
     class Inputs {
       todoItemById = {};
-      static get = (ctr: any): Inputs => ctr.inputs;
     }
 
     class TodosCtr {
       @facet inputs: Inputs;
       @facet selection: Selection;
       @facet highlight: Highlight;
-    }
-```
-
-Notes:
-
-1. Facets are implemented as classes that have a static get function to retrieve the facet from its container.
-   As we see in the example below, this can make clients agnostic of the container:
-
-```
-    function foo(ctr: any) {
-      // works for any ctr that has a Selection facet
-      selection = Selection.get(ctr);
     }
 ```
 
@@ -85,8 +68,6 @@ We now have skeletons for our reusable `Selection` and `Highlight` facets, and w
       @data ids: Array<string> = [];
       @data anchorId: string;
       @output items?: Array<ItemT>;
-
-      static get = (ctr: any): Selection => ctr.selection;
     }
 
     class TodosCtr { /* see above */ }
@@ -131,8 +112,6 @@ export class Selection<ItemT> {
       cbs.selectItem();
     }
   }
-
-  static get = (ctr: any): Selection => ctr.selection;
 }
 
 class TodosCtr {
@@ -223,7 +202,7 @@ Let's review what we've achieved:
 - `facetName(facet)` returns the name of the facet given the facet instance
 - `facetClassName(facetClass)` returns the name of the facet given the facet class
 - `ctrState(ctr)` collects all data members of all facets in a dictionary (used in logging)
-- `getCtr(facet)` returns the container for a facet
+- `getc(facet)` returns the container for a facet
 
 ## Details
 

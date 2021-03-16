@@ -1,5 +1,5 @@
 import { getLoggedMemberNames } from "../lib/data";
-import { getCtr, getFacetMemberNames } from "../lib/ctr";
+import { getc, getFacetMemberNames } from "../lib/ctr";
 import { options } from "./options";
 
 export function facetClassName(facetClass) {
@@ -7,7 +7,7 @@ export function facetClassName(facetClass) {
 }
 
 export function facetName(facet) {
-  const ctr = getCtr(facet);
+  const ctr = getc(facet);
   const prefix = ctr ? ctr.constructor.name + "/" : "";
   return prefix + facet.constructor.name;
 }
@@ -24,7 +24,7 @@ export const opName = (operationMember) =>
   camelToSnake(operationMember).toUpperCase();
 
 export function log(facet, operationMember, args, start) {
-  const ctr = getCtr(facet);
+  const ctr = getc(facet);
   const getState = ctr ? () => ctrState(ctr) : () => facetState(facet);
   const operationName = opName(operationMember);
   const label = facetName(facet) + "." + operationName;
