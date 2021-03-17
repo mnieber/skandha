@@ -52,7 +52,7 @@ Our initial code is:
     }
 ```
 
-### Connecting Selection to Inputs using mapDatas
+### Connecting Selection to Inputs using mapDatasToFacet
 
 We now have skeletons for our reusable `Selection` and `Highlight` facets, and we have a simple `Inputs` facet
 (that we don't intend to reuse) with "todo" data that we wish to select or highlight. The next steps are to:
@@ -73,7 +73,7 @@ We now have skeletons for our reusable `Selection` and `Highlight` facets, and w
     class TodosCtr { /* see above */ }
 
     function exampleOfMapDatas(ctr: TodosCtr) {
-      mapDatas(
+      mapDatasToFacet(
         [[Inputs, "todoItemById"], [Selection, "ids"]],
         [Selection, "items"],
         (itemById, ids) => lookUp(ids, itemById)
@@ -162,7 +162,7 @@ class TodosCtr {
 
   _applyPolicies() {
     // Create mapping onto selection.selectableIds.
-    mapDatas([[Inputs, 'todoItemById']], [Selection, 'selectableIds'], getIds)(this);
+    mapDatasToFacet([[Inputs, 'todoItemById']], [Selection, 'selectableIds'], getIds)(this);
     // Map onto selection.items. See explanation below
     selectionActsOnItems([Inputs, "todoItemById"])(this);
   }
@@ -180,7 +180,7 @@ Notes:
 
    ```
      export const selectionActsOnItems = ([Collection, itemById]) =>
-       mapDatas(
+       mapDatasToFacet(
          [[Collection, itemById], [Selection, "ids"]],
          [Selection, "items"],
          (itemById, ids) => lookUp(ids, itemById)
@@ -190,7 +190,7 @@ Notes:
 Let's review what we've achieved:
 
 1. Our container uses reusable classes for `Selection` and `Highlight`.
-2. We've connected our input data to the `Selection` and `Highlight` facets using `mapDatas`.
+2. We've connected our input data to the `Selection` and `Highlight` facets using `mapDatasToFacet`.
 3. We've set up a callback function that handles the actual selection
 4. We've set up and interaction between the `Selection` and `Highlight` by calling the `highlightFollowsSelection`
    function in the callback function that handles selection.
@@ -237,9 +237,9 @@ The logging looks similar to what you are used to from Redux:
 
 TODO: add image.
 
-### Implementation of mapDatas
+### Implementation of mapDatasToFacet
 
-Internally, `mapDatas` creates a property on the target instance that returns data from the source instance. In the above example, the use of `mapDatas` to fill
+Internally, `mapDatasToFacet` creates a property on the target instance that returns data from the source instance. In the above example, the use of `mapDatasToFacet` to fill
 ``selection.selectableIds` is equivalent to calling
 
 ```

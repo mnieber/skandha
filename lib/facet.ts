@@ -46,7 +46,3 @@ export function getm<T = any>(classMember: ClassMemberT): GetterT<T> {
   f.memberName = classMember[1];
   return f;
 }
-
-export function cm(facetClass: ClassT, memberName: MemberNameT): ClassMemberT {
-  return [facetClass, memberName];
-}

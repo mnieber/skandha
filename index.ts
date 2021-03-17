@@ -8,10 +8,15 @@ export {
   getLoggedMemberNames,
   getDataMemberNames,
 } from "./lib/data";
-export { mapData, mapDatas, patchFacet } from "./lib/patch";
+export {
+  mapDataToFacet,
+  mapDatasToFacet,
+  patchFacet,
+  mapDataToProp,
+} from "./lib/patch";
 export { getOptions, setOptions } from "./internal/options";
 export { operation, getOperationMemberNames } from "./lib/operation";
-export { facet, registerFacets, getm, getf, cm } from "./lib/facet";
+export { facet, registerFacets, getm, getf } from "./lib/facet";
 export { installPolicies } from "./lib/install";
 
 export type ClassT = any;

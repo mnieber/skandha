@@ -3,6 +3,15 @@ import { facetName } from "../internal/logging";
 import { getDataMemberNames } from "./data";
 import { GetterT, ClassMemberT } from "..";
 
+export function mapDataToProp(getter: () => any, facet: any, prop: string) {
+  delete facet[prop];
+  Object.defineProperty(facet, prop, {
+    get: getter,
+    enumerable: true,
+    configurable: true,
+  });
+}
+
 export function patchFacet(facet: any, members: any, options?: any) {
   const dataMemberNames = getDataMemberNames(facet);
 
@@ -25,7 +34,7 @@ export function patchFacet(facet: any, members: any, options?: any) {
   }
 }
 
-export const mapData = (
+export const mapDataToFacet = (
   getter: GetterT,
   [toFacetClass, toMember]: ClassMemberT,
   transform?: Function
@@ -46,7 +55,7 @@ export const mapData = (
   patchFacet(getf(toFacetClass, ctr), patch);
 };
 
-export const mapDatas = (
+export const mapDatasToFacet = (
   getters: Array<GetterT>,
   [toFacetClass, toMember]: ClassMemberT,
   transform: Function
