@@ -1,7 +1,7 @@
 import { getFacetMemberNames, setCtr } from "./ctr";
 import { getCtrClassAdmin, getCtrAdmin } from "../internal/utils";
 import { facetClassName } from "../internal/logging";
-import { ClassT, MemberNameT, GetterT, ClassMemberT } from "..";
+import { ClassT, GetterT, ClassMemberT } from "..";
 
 export function facet(facetHost, facetMember, descriptor = undefined) {
   const ctrClassAdmin = getCtrClassAdmin(facetHost.constructor);

@@ -5,11 +5,12 @@
 Despite having a lot of good libraries, programmers are still reimplementing the same solutions over and over.
 The reason is that not every solution can be captured in a library. When there are cross-cutting concerns (aka
 aspects, as in aspect oriented programming), then out-of-the-box solutions often do not fit well enough. This is
-especially true when the programmer is asked to work with data-structures that are to tightly coupled to a
-particular framework (for example: Qt).
+especially true when the programmer is asked to work with data-structures from a particular framework (for example: Qt).
 
-Skandha proposes an alternative solution (somewhat inspired by Erlang) that aims to let the programmer re-use existing logic, without being forced to use particular data structures everywhere. It let's the programmer map
-their custom data-structures on a set of minimal interfaces (called facets) and set up policies that determine how they interact. When these interfaces are truly minimal, they can be generic, which leads to better code reuse.
+Skandha proposes an alternative solution (somewhat inspired by Erlang) that aims to let the programmer re-use existing logic,
+while allowing them to use their own data-structures. This is achieved by mapping the user's data-structures onto a set of
+minimal interfaces called facets. These facets perform tasks by interacting via so-called policies. By keeping facets
+minimal, they can be generic, which leads to better code reuse.
 
 ## Links
 
@@ -21,18 +22,20 @@ their custom data-structures on a set of minimal interfaces (called facets) and 
 ## Explanation
 
 The Skandha library will be explained using some examples that progressively introduce various concepts
-and functions. The example shows how to add reusable selection and highlight behaviour to a container with
-Todo items.
+and functions. The example shows how to add reusable selection, highlight and filtering behaviour to a container
+with Todo items.
 
 ### Container and Facets
 
 A container is a set of related data, e.g. a Todo list and its Todos. A facet is a member of a container
 that represents a single aspect of this container, e.g. `Selection`. In the example below we see a `TodosCtr`
-with three facets: `Selection`, `Highlight` and `Inputs`. We are aiming for a design where:
+with five facets: `Selection`, `Highlight`, `Filtering`, `Inputs` and `Outputs`. As we shall see, `Selection`,
+`Highlight` and `Filtering` are generic (not tied to the concept of a Todo) and therefore reusable.
 
-- `Selection` and `Highlight` implement behaviours in a way that is reusable between containers
-- facets can be made to interact. For example, we want to enforce the rule that selected items are also
-  highlighted.
+The `Inputs` facet contains the data that is selected, highlighted and filtered, whereas the `Outputs` facet
+contains some of the results that are produced by the container (e.g. the filtered list of todos). It's not strictly
+necessary to use `Inputs` and `Outputs` as you could connect `Selection`, `Highlight`, and `Filtering` to
+datasources that are outside of the container, but it's easier to reason about the container if they exist.
 
 Our initial code is:
 
@@ -41,14 +44,44 @@ Our initial code is:
 
     class Highlight<ItemT> {}
 
+    class Filtering<ItemT> {}
+
     class Inputs {
-      todoItemById = {};
+      todoById = {};
+    }
+
+    class Outputs {
+      filteredTodoById = [];
     }
 
     class TodosCtr {
       @facet inputs: Inputs;
+      @facet output: Outputs;
       @facet selection: Selection;
       @facet highlight: Highlight;
+      @facet filtering: Filtering;
+    }
+```
+
+### Implementing the Selection facet
+
+The next step is to implement the Selection facet. The key idea is that this facet is only concerned with ids. To make
+a selection in any datastructure, it suffices to map this datastructure to a list of ids. To obtain the list of selected
+items, it suffices to map in the opposite direction: from ids to items. Therefore, our Selection facet looks like this:
+
+```
+    class Selection<ItemT> {
+      @input selectableIds?: Array<string>;
+      @data ids: Array<string> = [];
+      @data anchorId: string;
+      @output items?: Array<ItemT>;
+
+      selectItem(selectionParams: SelectionParamsT) {
+        if (!this.selectableIds.contains(selectionParams.itemId)) {
+          throw Error(`Invalid id: ${selectionParams.itemId}`);
+        }
+        // do something to update this.ids and this.anchorId
+      }
     }
 ```
 
@@ -74,7 +107,10 @@ We now have skeletons for our reusable `Selection` and `Highlight` facets, and w
 
     function exampleOfMapDatas(ctr: TodosCtr) {
       mapDatasToFacet(
-        [[Inputs, "todoItemById"], [Selection, "ids"]],
+        [
+          getm[Inputs, "todoItemById"],
+          getm[Selection, "ids"]
+        ],
         [Selection, "items"],
         (itemById, ids) => lookUp(ids, itemById)
       )(ctr);
