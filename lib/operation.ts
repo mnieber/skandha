@@ -2,17 +2,12 @@ import { options } from "../internal/options";
 import { log } from "../internal/logging";
 import { getFacetClassAdmin } from "../internal/utils";
 
-function _operation(
-  operationHost,
-  operationMember,
-  descriptor,
-  punctualOptions
-) {
+function _operation(target, propertyName, descriptor, punctualOptions) {
   const f = descriptor.value;
-  const facetClassAdmin = getFacetClassAdmin(operationHost.constructor);
+  const facetClassAdmin = getFacetClassAdmin(target.constructor);
   facetClassAdmin.operationMemberNames =
     facetClassAdmin.operationMemberNames ?? [];
-  facetClassAdmin.operationMemberNames.push(operationMember);
+  facetClassAdmin.operationMemberNames.push(propertyName);
 
   if (typeof descriptor.value === "function") {
     descriptor.value = !!punctualOptions.async
@@ -20,9 +15,9 @@ function _operation(
           const facet = this;
           const isLogging = options.logging && (punctualOptions.log ?? true);
 
-          isLogging && log(facet, operationMember, args, true);
+          isLogging && log(facet, propertyName, args, true);
           const returnValue = await f.bind(this)(...args);
-          isLogging && log(facet, operationMember, args, false);
+          isLogging && log(facet, propertyName, args, false);
 
           return Promise.resolve(returnValue);
         }
@@ -30,9 +25,9 @@ function _operation(
           const facet = this;
           const isLogging = options.logging && (punctualOptions.log ?? true);
 
-          isLogging && log(facet, operationMember, args, true);
+          isLogging && log(facet, propertyName, args, true);
           const returnValue = f.bind(this)(...args);
-          isLogging && log(facet, operationMember, args, false);
+          isLogging && log(facet, propertyName, args, false);
 
           return returnValue;
         };
@@ -47,12 +42,12 @@ export function getOperationMemberNames(facet: any) {
 
 export function operation(...args) {
   if (args.length === 1) {
-    const wrapped = (operationHost, operationMember, descriptor) => {
-      return _operation(operationHost, operationMember, descriptor, args[0]);
+    const wrapped = (target, propertyName, descriptor) => {
+      return _operation(target, propertyName, descriptor, args[0]);
     };
     return wrapped;
   }
 
-  const [operationHost, operationMember, descriptor] = args;
-  return _operation(operationHost, operationMember, descriptor, {});
+  const [target, propertyName, descriptor] = args;
+  return _operation(target, propertyName, descriptor, {});
 }
