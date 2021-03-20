@@ -28,15 +28,15 @@ with Todo items.
 
 ### Containers and Facets
 
-A container is a set of related data, e.g. a Todo list and its Todos. A facet is a member of a container
-that represents a single aspect of this container, e.g. `Selection`. In the example below we see a `TodosCtr`
+A container is a set of related data, e.g. todo items together with data about selection, highlight, etc. A facet is a
+member of a container that represents a single aspect such as `Selection`. In the example below we see a `TodosCtr`
 with five facets: `Selection`, `Highlight`, `Filtering`, `Inputs` and `Outputs`. As we shall see, `Selection`,
 `Highlight` and `Filtering` are generic (not tied to the concept of a Todo) and therefore reusable.
 
-The `Inputs` facet contains the data that is selected, highlighted and filtered, whereas the `Outputs` facet
+The `Inputs` facet contains the data (i.e. the todos) that is selected, highlighted and filtered, whereas the `Outputs` facet
 contains some of the results that are produced by the container (e.g. the filtered list of todos). It's not strictly
 necessary to use `Inputs` and `Outputs` as you could directly connect `Selection`, `Highlight`, and `Filtering` to
-datasources that are outside of the container, but it's easier to reason about the container if they exist.
+data-sources that are outside of the container, but it's easier to reason about the container if they exist.
 
 Our initial code is:
 
@@ -68,11 +68,11 @@ Our initial code is:
 
 We will first implement the Selection facet. The key requirements are that:
 
-- this facet is only concerned with ids. To make a selection in any datastructure, it suffices to map this datastructure
+- this facet is only concerned with ids. To make a selection in any data-structure, it suffices to map this data-structure
   to a list of ids. And to obtain the list of selected items, it suffices to map in the opposite direction: from ids to items.
 - the facet has to be generic, which means that the client code has control over how selection is actually
-  performed, and over the possible side-effects of selection. This means the client can decide
-  the effect of the shift key, or to decide that selecting an item also means highlighting it.
+  performed, and over possible side-effects. This means the client can determine
+  the effect of the shift key, or decide that selecting an item should also highlight it.
 - preferably the facet has to perform some useful work, and not just be an empty abstraction.
 
 This is our proposal for the Selection facet:
@@ -111,9 +111,9 @@ Notes:
 
 ### Implementing the Highlight and Filtering facets
 
-Since the ideas behind the `Highlight` and `Filtering` facets are the same, we will only
-show the code. For brevity, we will leave out the code for the callback objects such as `Highlight_highlightItem`
-(they are straightforward and not that interesting):
+Since `Highlight` and `Filtering` follow the same structure as the `Selection` facet, we will only
+show the code. For brevity, we will leave out the code for the callback objects such as
+`Highlight_highlightItem` (they are straightforward and not that interesting):
 
 ```
 export class Highlight<ValueT> {
@@ -127,11 +127,11 @@ export class Highlight<ValueT> {
   }
 }
 
-export class Filtering {
+export class Filtering<ValueT> {
   @data isEnabled: boolean = false;
   @data filter: FilterT = () => [];
 
-  @data inputItems?: Array<any>;
+  @data inputItems?: Array<ValueT>;
   @data get filteredItems() {
     return this.isEnabled ? this.filter(this.inputItems) : this.inputItems;
   }
@@ -158,11 +158,11 @@ This step happens in the container class. We will use the following requirements
 
 - the `cbs.selectItem` callback should make a selection that takes the shift and control keys into account.
   We will not show the code (you can see it
-  [here](https://github.com/mnieber/skandha-facets/blob/main/Selection.ts)) but assume we have some library
+  [here](https://github.com/mnieber/skandha-facets/blob/main/Selection.ts)) but assume we have a library
   function `handleSelectItem` for this.
 - items that are selected should become highlighted. We will introduce a reusable policy
   function for this called `highlightFollowsSelection`.
-- since applying the filter may hide the highlighted item, we want to correct the highlight in this case.
+- if applying the filter hides the highlighted item then we want to correct the highlight.
   We will use a another reusable policy called `highlightIsCorrectedOnFilterChange` (shown
   [here](https://github.com/mnieber/skandha-facets/blob/main/policies/highlightIsCorrectedOnFilterChange.ts))
 
@@ -202,9 +202,10 @@ export function highlightFollowsSelection(
   selection: Selection,
   selectionParams: SelectionParamsT
 ) {
+  const {isCtrl, isShift, itemId} = selectionParams;
   const ctr = getc(selection);
   if (!isCtrl && !isShift) {
-    getf(Highlight, ctr).highlightItem(selectionParams.itemId);
+    getf(Highlight, ctr).highlightItem(itemId);
   }
 }
 ```
@@ -217,8 +218,8 @@ Notes:
 ### Mapping data onto the container, and between facets
 
 At this point we have a container with facets that perform useful operations, and that interact
-to achieve interesting behaviours. However, the container will not work because `Selection.selectableIds`
-and `Filtering.inputItems` are not yet connected to any data sources. Note that the client of the container
+to achieve interesting behaviours. However, the container will not yet work because `Selection.selectableIds`
+and `Filtering.inputItems` are not connected to any data sources. Note that the client of the container
 is responsible for setting `Inputs.todoById` to the collection of todos (at some time after constructing the
 container).
 
@@ -288,7 +289,7 @@ and `Selection.item`:
 ```
 
 We are done: the facets in the container are connected. Note that if we put these mapping policies in a reusable
-library then we can shorted `_applyPolicies` to:
+library then we can shorten `_applyPolicies` to:
 
 ```
   _applyPolicies() {
@@ -307,21 +308,21 @@ library then we can shorted `_applyPolicies` to:
 ### Logging
 
 By calling `setOptions({logging: true})`, the Skandha library allows you to inspect each facet before and
-after calling an operation (an operation is any facet member function decorated with @operation).
-Facet members that are decorated with `@data` will be logged in a way that looks similar to what you are
+after calling an operation (remember that an operation is any facet member function decorated with @operation).
+This will log Facet members that are decorated with `@data` in a way that looks similar to what you are
 used to from Redux:
 
 - before and after each operation, the entire container that holds the facet is logged
-- all decorated data members of each facet in the container are included in the log
+- all data members of each facet in the container are included in the log
 - log entries are nested so that you can see how operation calls are nested
 
 ### Making facets observable with Mobx
 
 If you want to render the facets with React then we need to let React know when data changes.
 The [skandha-mobx](http://github.com/mnieber/skandha-mobx) library was created for this purpose.
-It turns each `@data` member into a Mobx property that is either observable or computed. This means
-that if you decorate your render function with `observer` then any changes in the container (in
-observable facet members) will trigger a re-render:
+It turns each `@data` member into a Mobx property that is either observable or computed. By decorating
+your render function with `observer` you will get a re-render for any changes (in observable facet members)
+in the container:
 
 ```
 class TodosCtr {
@@ -344,10 +345,8 @@ SkandhaJS introduces a lot of new patterns and ideas (that are of course not in 
 put reusable behaviours on top of your existing data-structures. The difference to a more standard approach
 can feel overwhelming, but it's important to point out the beneficial side effect of
 separating concerns in a clear and understandable way. We could add a `Editing` facet to our code and install
-a policy that says that changing the highlight disables editing. Since we have a container that contains
-`Editing` and `Highlight` facets we can call `editing.setEnabled(false)` in the `cbs.highlightItem()` callback
-to achieve this. Notably, we will not be tempted to put editing-specific code directly in the highlight function
-(that would obviously be mixing concerns).
+a policy that says that changing the highlight disables editing. By using facets, we will not be tempted to put
+editing-specific code directly in the highlight function (that would obviously be mixing concerns).
 
 In my experience, using SkandhaJS leads to code reuse and improved structure. On top of that, it offers a good
 debugging experience (yes, you will still have to debug) by logging all changes in the container. Finally,
