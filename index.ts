@@ -23,6 +23,3 @@ export type ClassT = any;
 export type MemberNameT = string;
 export type ClassMemberT = [ClassT, MemberNameT];
 export type GetterT<T = any> = (ctr: any) => T;
-export type AdapterT = {
-  [member: string]: ClassMemberT;
-};
