@@ -56,11 +56,11 @@ Our initial code is:
     }
 
     class TodosCtr {
-      @facet inputs: Inputs;
-      @facet output: Outputs;
-      @facet selection: Selection;
-      @facet highlight: Highlight;
-      @facet filtering: Filtering;
+      @facet inputs: Inputs = new Inputs();
+      @facet outputs: Outputs = new Outputs();
+      @facet selection: Selection = new Selection();
+      @facet highlight: Highlight = new Highlight();
+      @facet filtering: Filtering = new Filtering();
     }
 ```
 
@@ -90,8 +90,8 @@ class Selection<ItemT> {
   @data items?: Array<ItemT>;
 
   @operation @host selectItem(selectionParams: SelectionParamsT) {
-    return (cbs: Selection_select) {
-      if (!this.selectableIds.contains(selectionParams.itemId)) {
+    return (cbs: Selection_select) => {
+      if (!this.selectableIds.includes(selectionParams.itemId)) {
         throw Error(`Invalid id: ${selectionParams.itemId}`);
       }
       cbs.selectItem();
