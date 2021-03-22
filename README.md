@@ -242,16 +242,16 @@ facet member:
 ```
   _applyPolicies() {
     mapDataToFacet(
-      getm([Inputs, 'todoById']),
       [Filtering, 'inputItems'],
+      getm([Inputs, 'todoById']),
       (x: TodoByIdT) => Object.values(x)
     )(this);
 
     const listToItemById = items => items.reduce((acc: any, x: TodoT) => ({ ...acc, [x.id]: x }), {})
 
     mapDataToFacet(
-      getm([Filtering, 'filteredItems']),
       [Outputs, 'filteredTodoById'],
+      getm([Filtering, 'filteredItems']),
       listToItemById,
     )(this);
   }
@@ -276,26 +276,26 @@ and `Selection.item`:
     // ...
 
     mapDataToFacet(
-      getm([Outputs, 'filteredTodoById']),
       [Selection, 'selectableIds'],
+      getm([Outputs, 'filteredTodoById']),
       (x: TodoByIdT) => Object.keys(x)
     )(this);
 
     mapDatasToFacet(
+      [Selection, 'items'],
       [
         getm([Selection, 'ids']),
         getm([Inputs, 'todoById']),
       ],
-      [Selection, 'items'],
       (ids: string[], todoById: TodoByIdT) => ids.map((id) => todoById[id])
     )(this);
 
     mapDatasToFacet(
+      [Highlight, 'item'],
       [
         getm([Highlight, 'id']),
         getm([Inputs, 'todoById']),
       ],
-      [Highlight, 'item'],
       (id: string, todoById: TodoByIdT) => todoById[id]
     )(this);
   }
@@ -319,8 +319,8 @@ library then we can shorten `_applyPolicies` to:
       // filtering
       FilteringUsesInputItems([Inputs, 'todoById'], Object.values),
       mapDataToFacet(
-        getm([Filtering, 'filteredItems']),
         [Outputs, 'filteredTodoById'],
+        getm([Filtering, 'filteredItems']),
         listToItemById,
       ),
     ]
