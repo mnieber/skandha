@@ -22,9 +22,9 @@ minimal, they can be generic, which leads to better code reuse.
 
 ## Example code
 
-The full example code for this README can be found [here](http://github.com/mnieber/skandha-sample). Note that this repository
+The full example code for this README can be found [here](http://github.com/mnieber/skandha-sample-app). Note that this repository
 contains two version of the example code. The frst version creates all the behaviours from scratch. Although it gives a good insight into
-the Skandha principles, the code will look bulky. The second version is more reflective of a real use-case as it uses the reusable behaviours
+the Skandha principles, the code will look bulky. The second version is reflective of a real use-case as it uses the reusable behaviours
 from [skandha-facets](http://github.com/mnieber/skandha-facets).
 
 ## Explanation
