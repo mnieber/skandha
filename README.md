@@ -20,6 +20,13 @@ minimal, they can be generic, which leads to better code reuse.
 - The [skandha-mobx](http://github.com/mnieber/skandha-mobx) library contains bindings to MobX
 - The [aspiration](http://github.com/mnieber/aspiration) library handles aspect oriented programming (AOP)
 
+## Example code
+
+The full example code for this README can be found [here](http://github.com/mnieber/skandha-sample). Note that this repository
+contains two version of the example code. The frst version creates all the behaviours from scratch. Although it gives a good insight into
+the Skandha principles, the code will look bulky. The second version is more reflective of a real use-case as it uses the reusable behaviours
+from [skandha-facets](http://github.com/mnieber/skandha-facets).
+
 ## Explanation
 
 The Skandha library will be explained using an example that progressively introduces various concepts
@@ -41,28 +48,33 @@ data-sources that are outside of the container, but it's easier to reason about 
 Our initial code is:
 
 ```
-    class Selection<ItemT> {}
+    class Selection<TodoT> {}
 
-    class Highlight<ItemT> {}
+    class Highlight<TodoT> {}
 
-    class Filtering<ItemT> {}
+    class Filtering<TodoT> {}
 
     class Inputs {
-      todoById = {};
+      @data todoById: TodoByIdT = {};
     }
 
     class Outputs {
-      filteredTodoById = {};
+      @data filteredTodoById: TodoByIdT = {};
     }
 
     class TodosCtr {
       @facet inputs: Inputs = new Inputs();
       @facet outputs: Outputs = new Outputs();
-      @facet selection: Selection = new Selection();
-      @facet highlight: Highlight = new Highlight();
-      @facet filtering: Filtering = new Filtering();
+      @facet selection: Selection<TodoT> = new Selection<TodoT>();
+      @facet highlight: Highlight<TodoT> = new Highlight<TodoT>();
+      @facet filtering: Filtering<TodoT> = new Filtering<TodoT>();
     }
 ```
+
+Notes:
+
+- The `@data` and `@operation` decorators mark the fields in the facet that make up its abstract interface.
+  Clients should use only these fields.
 
 ### Implementing the Selection facet
 
@@ -78,16 +90,16 @@ We will first implement the Selection facet. The key requirements are that:
 This is our proposal for the Selection facet:
 
 ```
-class Selection_select extends Cbs {
-  selectionParams: SelectionParamsT;
+export class Selection_select extends Cbs {
+  selectionParams: SelectionParamsT = stub();
   selectItem() {}
 }
 
-class Selection<ItemT> {
-  @data selectableIds?: Array<string>;
+class Selection<TodoT> {
+  @data selectableIds: Array<string> = stub();
   @data ids: Array<string> = [];
-  @data anchorId: string;
-  @data items?: Array<ItemT>;
+  @data anchorId?: string;
+  @data items?: Array<ValueT>;
 
   @operation @host selectItem(selectionParams: SelectionParamsT) {
     return (cbs: Selection_select) => {
@@ -102,12 +114,12 @@ class Selection<ItemT> {
 
 Notes:
 
-- The `@data` and `@operation` decorators mark the fields in the facet that make up its abstract interface.
-  Clients should use only these fields.
 - The `@host` decorator comes from the [Aspiration](http://github.com/mnieber/aspiration) library. It makes
-  the function take a set of callbacks that are installed by the client. This allows us to
+  the function take a callback object (i.e. a set of callbacks) that is installed by the client. This allows us to
   write a `Selection` facet that is generic (our 2nd requirement) but also does useful work (3rd requirement).
   We shall discuss below how the `cbs.selectItem` callback is implemented.
+- The `stub` function is used in callback objects to indicate that although the field is initialized with `undefined`
+  it will receive a value later.
 
 ### Implementing the Highlight and Filtering facets
 
@@ -116,9 +128,9 @@ show the code. For brevity, we will leave out the code for the callback objects 
 `Highlight_highlightItem` (they are straightforward and not that interesting):
 
 ```
-export class Highlight<ValueT> {
+export class Highlight<ValueT = any> {
   @data id: string | undefined;
-  @data item: ValueT;
+  @data item?: ValueT;
 
   @operation @host highlightItem(id: string) {
     return (cbs: Highlight_highlightItem) => {
@@ -127,7 +139,7 @@ export class Highlight<ValueT> {
   }
 }
 
-export class Filtering<ValueT> {
+export class Filtering<ValueT = any> {
   @data isEnabled: boolean = false;
   @data filter: FilterT = () => [];
 
@@ -137,21 +149,21 @@ export class Filtering<ValueT> {
   }
 
   @operation @host apply(filter: FilterT) {
-    return (cbs: FilteringCbs_apply) => {
+    return (cbs: Filtering_apply) => {
       this.filter = filter;
       this.isEnabled = true;
     };
   }
 
   @operation @host setEnabled(flag: boolean) {
-    return (cbs: FilteringCbs_setEnabled) => {
+    return (cbs: Filtering_setEnabled) => {
       this.isEnabled = flag;
     };
   }
 }
 ```
 
-### Implementing the callback functions
+### Implementing the callback objects
 
 We've set up the basic structure of the facets, but the callbacks still have to be implemented.
 This step happens in the container class. We will use the following requirements:
@@ -180,7 +192,6 @@ class TodosCtr {
 
     setCallbacks(this.selection, {
       select: {
-        // install the default selection handler as a callback
         selectItem(this: Selection_select): {
           handleSelectItem(ctr.selection, this.selectionParams);
           highlightFollowsSelection(ctr.selection, this.selectionParams);  // See below
@@ -214,6 +225,7 @@ Notes:
 
 - The call to `registerFacets` is mandatory. It creates a back-reference to the container in each facet
   instance.
+- The `getc` gets the container for a given facet, whereas `getf` gets a facet for a given container.
 
 ### Mapping data onto the container, and between facets
 
@@ -230,15 +242,15 @@ facet member:
 ```
   _applyPolicies() {
     mapDataToFacet(
-      getm[[Inputs, 'todoById'])
+      getm([Inputs, 'todoById']),
       [Filtering, 'inputItems'],
-      todoById => Object.values(todoById)
+      (x: TodoByIdT) => Object.values(x)
     )(this);
 
-    const listToItemById = items => items.reduce((acc, x) => return {...acc, [x.id]: x}, {})
+    const listToItemById = items => items.reduce((acc: any, x: TodoT) => ({ ...acc, [x.id]: x }), {})
 
     mapDataToFacet(
-      getm[[Filtering, 'filteredItems'])
+      getm([Filtering, 'filteredItems']),
       [Outputs, 'filteredTodoById'],
       listToItemById,
     )(this);
@@ -264,26 +276,27 @@ and `Selection.item`:
     // ...
 
     mapDataToFacet(
-      getm[[Outputs, 'filteredTodoById'])
+      getm([Outputs, 'filteredTodoById']),
       [Selection, 'selectableIds'],
-      todos => Object.keys(todos)
+      (x: TodoByIdT) => Object.keys(x)
     )(this);
 
     mapDatasToFacet(
       [
-        getm[[Selection, 'ids']),
-        getm[[Inputs, 'todoById']),
-      ]
+        getm([Selection, 'ids']),
+        getm([Inputs, 'todoById']),
+      ],
       [Selection, 'items'],
-      (ids, todoById) => ids.map(id => todoById[id])
+      (ids: string[], todoById: TodoByIdT) => ids.map((id) => todoById[id])
     )(this);
 
     mapDatasToFacet(
       [
-        getm[[Highlight, 'id']),
-      ]
+        getm([Highlight, 'id']),
+        getm([Inputs, 'todoById']),
+      ],
       [Highlight, 'item'],
-      (id, todoById) => todoById[id])
+      (id: string, todoById: TodoByIdT) => todoById[id]
     )(this);
   }
 ```
@@ -296,9 +309,20 @@ library then we can shorten `_applyPolicies` to:
     // ...
 
     const policies = [
-      FilteringTakesInputItemById([Inputs, 'todoById']),
-      FilteringCreatesOutputItemById([Outputs, 'filteredTodoById']),
-      SelectionTakesInputItemById([Outputs, 'filteredTodoById']),
+      // selection
+      SelectionUsesSelectableIds([Outputs, 'filteredTodoById'], Object.keys),
+      SelectionUsesItemLookUpTable([Inputs, 'todoById']),
+
+      // highlighting
+      HighlightUsesItemLookUpTable([Inputs, 'todoById']),
+
+      // filtering
+      FilteringUsesInputItems([Inputs, 'todoById'], Object.values),
+      mapDataToFacet(
+        getm([Filtering, 'filteredItems']),
+        [Outputs, 'filteredTodoById'],
+        listToItemById,
+      ),
     ]
 
     installPolicies<TodosCtr>(policies, this);
