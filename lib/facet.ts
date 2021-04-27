@@ -60,7 +60,8 @@ export function getf(facetClass: ClassT, ctr?: any) {
 }
 
 export function getm<T = any>(classMember: ClassMemberT): GetterT<T> {
-  const f = (ctr: any) => getf(classMember[0], ctr)[classMember[1]];
+  const f = (ctr: any) =>
+    getf(classMember[0], classMember[2] ?? ctr)[classMember[1]];
   // Set some properties on f to easy debugging later
   f.facetClassName = classMember[0].name;
   f.facetMemberName = classMember[1];

@@ -35,7 +35,7 @@ export function patchFacet(facet: any, members: any, options?: any) {
 }
 
 export const mapDataToFacet = (
-  [toFacetClass, toMember]: ClassMemberT,
+  [toFacetClass, toMember, toCtr]: ClassMemberT,
   getter: GetterT,
   transform?: Function
 ) => (ctr: any) => {
@@ -43,7 +43,7 @@ export const mapDataToFacet = (
     [toMember]: {
       get: () => {
         const context = {
-          ctr,
+          ctr: toCtr ?? ctr,
           getter,
           toClassMember: [toFacetClass, toMember],
           data: getter(ctr),
@@ -52,11 +52,11 @@ export const mapDataToFacet = (
       },
     },
   };
-  patchFacet(getf(toFacetClass, ctr), patch);
+  patchFacet(getf(toFacetClass, toCtr ?? ctr), patch);
 };
 
 export const mapDatasToFacet = (
-  [toFacetClass, toMember]: ClassMemberT,
+  [toFacetClass, toMember, toCtr]: ClassMemberT,
   getters: Array<GetterT>,
   transform: Function
 ) => (ctr: any) => {
@@ -64,7 +64,7 @@ export const mapDatasToFacet = (
     [toMember]: {
       get: () => {
         const context = {
-          ctr,
+          ctr: toCtr ?? ctr,
           getters,
           toClassMember: [toFacetClass, toMember],
           datas: getters.map((getter) => getter(ctr)),
@@ -73,5 +73,5 @@ export const mapDatasToFacet = (
       },
     },
   };
-  patchFacet(getf(toFacetClass, ctr), patch);
+  patchFacet(getf(toFacetClass, toCtr ?? ctr), patch);
 };
