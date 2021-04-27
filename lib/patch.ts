@@ -1,5 +1,5 @@
 import { getf } from "./facet";
-import { facetName } from "../internal/logging";
+import { facetLogName } from "../internal/logging";
 import { getDataMemberNames } from "./data";
 import { GetterT, ClassMemberT } from "..";
 
@@ -20,7 +20,7 @@ export function patchFacet(facet: any, members: any, options?: any) {
       if (!dataMemberNames.includes(prop)) {
         console.error(
           `Patching a property ${prop} that wasn't decorated with ` +
-            `@data, @input or @output in ${facetName(facet)}`
+            `@data, @input or @output in ${facetLogName(facet)}`
         );
       }
     }

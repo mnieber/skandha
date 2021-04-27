@@ -1,6 +1,9 @@
-import { getFacetMemberNames, setCtr } from "./ctr";
-import { getCtrClassAdmin, getCtrAdmin } from "../internal/utils";
-import { facetClassName } from "../internal/logging";
+import { setCtr } from "./ctr";
+import {
+  getCtrClassAdmin,
+  getCtrAdmin,
+  getFacetAdmin,
+} from "../internal/utils";
 import { ClassT, GetterT, ClassMemberT } from "..";
 
 export function facet(facetHost, facetMember, descriptor = undefined) {
@@ -10,18 +13,31 @@ export function facet(facetHost, facetMember, descriptor = undefined) {
   return descriptor;
 }
 
-export function registerFacets(ctr) {
+export function registerFacets(
+  ctr,
+  options: { name: string; members?: string[] }
+) {
   const ctrAdmin = getCtrAdmin(ctr);
-
+  ctrAdmin.facetMembers = ctrAdmin.facetMembers ?? [];
   ctrAdmin.facetByFacetClassName = ctrAdmin.facetByFacetClassName ?? {};
-  getFacetMemberNames(ctr).forEach((member) => {
+
+  (
+    options.members ??
+    getCtrClassAdmin(ctr.constructor).facetMembers ??
+    Object.getOwnPropertyNames(ctr)
+  ).forEach((member) => {
+    ctrAdmin.facetMembers.push(member);
+
     const facet = ctr[member];
     setCtr(facet, ctr);
 
-    const className = facetClassName(facet.constructor);
+    const facetAdmin = getFacetAdmin(facet);
+    facetAdmin.logName = `${options.name}/${facet.constructor.name}`;
+
+    const className = facet.constructor.name;
     if (ctrAdmin.facetByFacetClassName[className] !== undefined) {
       console.error(
-        `Two facets of same type ${className} in container ${ctr.constructor.name}`
+        `Two facets of same type ${className} in container ${options.name}`
       );
     }
     ctrAdmin.facetByFacetClassName[className] = facet;
@@ -42,7 +58,8 @@ export function getf(facetClass: ClassT, ctr?: any) {
 
 export function getm<T = any>(classMember: ClassMemberT): GetterT<T> {
   const f = (ctr: any) => getf(classMember[0], ctr)[classMember[1]];
-  f.className = classMember[0].name;
-  f.memberName = classMember[1];
+  // Set some properties on f to easy debugging later
+  f.facetClassName = classMember[0].name;
+  f.facetMemberName = classMember[1];
   return f;
 }

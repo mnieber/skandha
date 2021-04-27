@@ -1,15 +1,16 @@
 import { getLoggedMemberNames } from "../lib/data";
+import { getFacetAdmin } from "../internal/utils";
 import { getc, getFacetMemberNames } from "../lib/ctr";
 import { options } from "./options";
 
-export function facetClassName(facetClass) {
-  return facetClass.name;
-}
-
-export function facetName(facet) {
+export function _defaultFacetLogName(facet: any) {
   const ctr = getc(facet);
   const prefix = ctr ? ctr.constructor.name + "/" : "";
   return prefix + facet.constructor.name;
+}
+
+export function facetLogName(facet: any) {
+  return getFacetAdmin(facet).logName ?? _defaultFacetLogName(facet);
 }
 
 function camelToSnake(string) {
@@ -20,14 +21,13 @@ function camelToSnake(string) {
     .toLowerCase();
 }
 
-export const opName = (operationMember) =>
-  camelToSnake(operationMember).toUpperCase();
+const opName = (operationMember) => camelToSnake(operationMember).toUpperCase();
 
 export function log(facet, operationMember, args, start) {
   const ctr = getc(facet);
   const getState = ctr ? () => ctrState(ctr) : () => facetState(facet);
   const operationName = opName(operationMember);
-  const label = facetName(facet) + "." + operationName;
+  const label = facetLogName(facet) + "." + operationName;
 
   if (start) {
     console.group(label);
