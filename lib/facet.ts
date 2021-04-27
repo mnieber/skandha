@@ -15,11 +15,14 @@ export function facet(facetHost, facetMember, descriptor = undefined) {
 
 export function registerFacets(
   ctr,
-  options: { name: string; members?: string[] }
+  options: { name?: string; members?: string[]; ctrState?: Function }
 ) {
+  const ctrName = options.name ?? ctr.constructor.name;
+
   const ctrAdmin = getCtrAdmin(ctr);
   ctrAdmin.facetMembers = ctrAdmin.facetMembers ?? [];
   ctrAdmin.facetByFacetClassName = ctrAdmin.facetByFacetClassName ?? {};
+  ctrAdmin.ctrStateOverride = options.ctrState;
 
   (
     options.members ??
@@ -32,7 +35,7 @@ export function registerFacets(
     setCtr(facet, ctr);
 
     const facetAdmin = getFacetAdmin(facet);
-    facetAdmin.logName = `${options.name}/${facet.constructor.name}`;
+    facetAdmin.logName = `${ctrName}/${facet.constructor.name}`;
 
     const className = facet.constructor.name;
     if (ctrAdmin.facetByFacetClassName[className] !== undefined) {

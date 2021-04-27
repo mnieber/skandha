@@ -1,5 +1,5 @@
 import { getLoggedMemberNames } from "../lib/data";
-import { getFacetAdmin } from "../internal/utils";
+import { getCtrAdmin, getFacetAdmin } from "../internal/utils";
 import { getc, getFacetMemberNames } from "../lib/ctr";
 import { options } from "./options";
 
@@ -25,7 +25,9 @@ const opName = (operationMember) => camelToSnake(operationMember).toUpperCase();
 
 export function log(facet, operationMember, args, start) {
   const ctr = getc(facet);
-  const getState = ctr ? () => ctrState(ctr) : () => facetState(facet);
+  const ctrAdmin = ctr ? getCtrAdmin(ctr) : undefined;
+  const getCtrState = ctrAdmin?.ctrStateOverride ?? ctrState;
+  const getState = ctr ? () => getCtrState(ctr) : () => facetState(facet);
   const operationName = opName(operationMember);
   const label = facetLogName(facet) + "." + operationName;
 
