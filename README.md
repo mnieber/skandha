@@ -13,6 +13,17 @@ while allowing them to use their own data-structures. This is achieved by mappin
 minimal interfaces called facets. These facets perform tasks by interacting via so-called policies. By keeping facets
 minimal, they can be generic, which leads to better code reuse.
 
+---
+
+**NOTE**
+
+The binding of facets to containers in Skandha relies on class names. Therefore you
+need to disable the mangling of classnames in your minification tool, or disable minification completely. A future version of Skandha will allow you to declare
+facet names by adding a property in the facet class, or specify the names when calling
+`registerFacets`.
+
+---
+
 ## Links
 
 - The [skandha](http://github.com/mnieber/skandha) library contains the basic building blocks

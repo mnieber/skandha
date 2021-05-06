@@ -40,7 +40,7 @@ export function registerFacets(
     const className = facet.constructor.name;
     if (ctrAdmin.facetByFacetClassName[className] !== undefined) {
       console.error(
-        `Two facets of same type ${className} in container ${options.name}`
+        `Two facets of same type ${className} in container ${ctrName}`
       );
     }
     ctrAdmin.facetByFacetClassName[className] = facet;
