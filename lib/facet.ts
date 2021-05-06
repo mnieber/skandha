@@ -4,6 +4,8 @@ import {
   getCtrAdmin,
   getFacetAdmin,
 } from "../internal/utils";
+import { options as skandhaOptions } from "../internal/options";
+import { ctrState as getCtrState } from "../internal/logging";
 import { ClassT, GetterT, ClassMemberT } from "..";
 
 export function facet(facetHost, facetMember, descriptor = undefined) {
@@ -44,6 +46,10 @@ export function registerFacets(
       );
     }
     ctrAdmin.facetByFacetClassName[className] = facet;
+
+    if (skandhaOptions.logging) {
+      console.log("%c     Ctr initialized", "color: gray", getCtrState(ctr));
+    }
   });
 }
 
