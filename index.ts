@@ -1,10 +1,5 @@
 export { ctrState } from "./internal/logging";
-export {
-  getc,
-  getFacetMemberNames,
-  addCleanUpFunctionToCtr,
-  cleanUpCtr,
-} from "./lib/ctr";
+export { getc, getFacetMemberNames } from "./lib/ctr";
 export {
   input,
   output,
