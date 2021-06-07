@@ -1,6 +1,6 @@
 {
   "name": "skandha",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Create data containers with modular behaviours",
   "main": "index.js",
   "repository": "https://github.com/mnieber/skandha.git",
