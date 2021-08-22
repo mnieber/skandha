@@ -2,25 +2,18 @@
 
 ## Rationale
 
-Despite having a lot of good libraries, programmers still find themselves reimplementing
-the same solutions over and over.
-The reason is that not every solution can be captured in a library. When there are cross-cutting concerns (aka
-aspects, as in aspect oriented programming), then out-of-the-box solutions often do not fit well enough. For this
-reason, programmers are often reluctant to store their data in framework-specific data-structures, even though such frameworks could potentially save time.
-
-Skandha proposes an alternative solution (somewhat inspired by Erlang) that aims to let the programmer re-use existing logic,
-while allowing them to use their own data-structures. This is achieved by mapping the user's data-structures onto a set of
-minimal interfaces called facets. These facets perform tasks by interacting via so-called policies. By keeping facets
-minimal, they can be generic, which leads to better code reuse.
+The goal of SkandhaJS is to provide data containers that have reusable behaviors, such as
+selection, highlighting, filtering, drag-and-drop, etc. The only requirement for using these containers is
+that every item in the container has a unique id. When combining behaviors in a container, you need to
+make sure that they interact properly. For example, when selecting an item you may want the item also to
+be highlighted. As we will see, these interactions are achieved by implementing callback functions.
 
 ---
 
 **NOTE**
 
-The binding of facets to containers in Skandha relies on class names. Therefore you
-need to disable the mangling of classnames in your minification tool, or disable minification completely. A future version of Skandha will allow you to declare
-facet names by adding a property in the facet class, or specify the names when calling
-`registerFacets`.
+In a Skandha container, behaviors are implemented using classes that are called facets, and they are found by their class name. Therefore you
+need to disable the mangling of classnames in your minification tool, or disable minification completely. A future version of Skandha will allow you to declare the facet names explicitly, removing the dependency on the class name.
 
 ---
 
@@ -34,127 +27,166 @@ facet names by adding a property in the facet class, or specify the names when c
 ## Example code
 
 The full example code for this README can be found [here](http://github.com/mnieber/skandha-sample-app). Note that this repository
-contains two version of the example code. The frst version creates all the behaviours from scratch. Although it gives a good insight into
+contains two version of the example code. The first version creates all the behaviours from scratch. Although it gives a good insight into
 the Skandha principles, the code will look bulky. The second version is reflective of a real use-case as it uses the reusable behaviours
 from [skandha-facets](http://github.com/mnieber/skandha-facets).
 
 ## Explanation
 
-The Skandha library will be explained using an example that progressively introduces various concepts
-and functions. The example shows how to add reusable selection, highlight and filtering behaviour to a container
-with Todo items.
+### The Selection facet
 
-### Containers and Facets
-
-A container is a set of related data, e.g. todo items together with data about selection, highlight, etc. A facet is a
-member of a container that represents a single aspect such as `Selection`. In the example below we see a `TodosCtr`
-with five facets: `Selection`, `Highlight`, `Filtering`, `Inputs` and `Outputs`. As we shall see, `Selection`,
-`Highlight` and `Filtering` are generic (not tied to the concept of a Todo) and therefore reusable.
-
-The `Inputs` facet contains the data (i.e. the todos) that is selected, highlighted and filtered, whereas the `Outputs` facet
-contains some of the results that are produced by the container (e.g. the filtered list of todos). It's not strictly
-necessary to use `Inputs` and `Outputs` as you could directly connect `Selection`, `Highlight`, and `Filtering` to
-data-sources that are outside of the container, but it's easier to reason about the container if they exist.
-
-Our initial code is:
+As mentioned above, behaviors in Skandha are implemented as classes that are called facets. Let's start by looking at a reusable
+Selection facet. Before we show how it's implemented, here is an example of using it to select a range of
+items from id `2` to id `5`:
 
 ```
-    class Selection<TodoT> {}
+const ctr = createContainer();
+ctr.selection.selectableIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
-    class Highlight<TodoT> {}
-
-    class Filtering<TodoT> {}
-
-    class Inputs {
-      @data todoById: TodoByIdT = {};
-    }
-
-    class Outputs {
-      @data filteredTodoById: TodoByIdT = {};
-    }
-
-    class TodosCtr {
-      @facet inputs: Inputs = new Inputs();
-      @facet outputs: Outputs = new Outputs();
-      @facet selection: Selection<TodoT> = new Selection<TodoT>();
-      @facet highlight: Highlight<TodoT> = new Highlight<TodoT>();
-      @facet filtering: Filtering<TodoT> = new Filtering<TodoT>();
-    }
+ctr.selection.selectItem({itemId: "2"});
+ctr.selection.selectItem({itemId: "5", isShift: true});
+console.log(ctr.selection.ids);
 ```
 
-Notes:
-
-- The `@data` and `@operation` decorators mark the fields in the facet that make up its abstract interface.
-  Clients should use only these fields.
-
-### Implementing the Selection facet
-
-We will first implement the Selection facet. The key requirements are that:
-
-- this facet is only concerned with ids. To make a selection in any data-structure, it suffices to map this data-structure
-  to a list of ids. And to obtain the list of selected items, it suffices to map in the opposite direction: from ids to items.
-- the facet has to be generic, which means that the client code has control over how selection is actually
-  performed, and over possible side-effects. This means the client can determine
-  the effect of the shift key, or decide that selecting an item should also highlight it.
-- preferably the facet has to perform some useful work, and not just be an empty abstraction.
-
-This is our proposal for the Selection facet:
+Note that the key function call here is `selection.selectItem`. Let's look at how it's implemented. First of all, we need a type that holds the selection parameters:
 
 ```
-export class Selection_select extends Cbs {
+export type SelectionParamsT = {
+  itemId: string | undefined;
+  isShift?: boolean;
+  isCtrl?: boolean;
+};
+```
+
+The next step is less obvious: we define a helper class that declares the arguments and callbacks of
+`selection.selectItem`. Why is this needed? The reason for using a callback function is that we
+don't want to hard code how selection is performed (e.g. what the effect of the shift and ctrl key is),
+because this would limit the reusability. The reason for storing the arguments of `selection.selectItem`
+is that this makes it easier to pass these arguments to other functions that want to use
+them. For example, if a side-effect of selection is to highlight the item, then we
+would like to pass the `SelectionParamsT` instance also to a `highlightSelectedItem` policy function
+(this will be explained in detail later). The helper class looks like this:
+
+```
+export class Selection_selectItem extends Cbs {
   selectionParams: SelectionParamsT = stub();
-  selectItem() {}
+  select() {}
 }
+```
 
-class Selection<TodoT> {
+Next, we add the `Selection` class itself that has a `selectItem` function that checks the selection
+parameters and then calls the `select` callback function.
+
+```
+class Selection<ValueT> {
   @data selectableIds: Array<string> = stub();
   @data ids: Array<string> = [];
   @data anchorId?: string;
-  @data items?: Array<ValueT>;
+  @data items?: Array<ValueT>;  // ignore this field for now...
 
   @operation @host selectItem(selectionParams: SelectionParamsT) {
-    return (cbs: Selection_select) => {
+    return (cbs: Selection_selectItem) => {
       if (!this.selectableIds.includes(selectionParams.itemId)) {
         throw Error(`Invalid id: ${selectionParams.itemId}`);
       }
-      cbs.selectItem();
+      cbs.select();
     }
   }
 }
 ```
 
-Notes:
-
-- The `@host` decorator comes from the [Aspiration](http://github.com/mnieber/aspiration) library. It makes
-  the function take a callback object (i.e. a set of callbacks) that is installed by the client. This allows us to
-  write a `Selection` facet that is generic (our 2nd requirement) but also does useful work (3rd requirement).
-  We shall discuss below how the `cbs.selectItem` callback is implemented.
-- The `stub` function is used in callback objects to indicate that although the field is initialized with `undefined`
-  it will receive a value later.
-
-### Implementing the Highlight and Filtering facets
-
-Since `Highlight` and `Filtering` follow the same structure as the `Selection` facet, we will only
-show the code. For brevity, we will leave out the code for the callback objects such as
-`Highlight_highlightItem` (they are straightforward and not that interesting):
+And finally, we add the `createContainer` function that creates a `Selection` instance and implements
+the `select` callback. We don't show the code of `handleSelectItem`, but you can see it
+[here](https://github.com/mnieber/skandha-facets/blob/main/Selection.ts).
 
 ```
+const createContainer() {
+  const ctr = {
+    selection: new Selection()
+  };
+
+  setCallbacks(ctr.selection, {
+    selectItem: {
+      select(this: Selection_selectItem): {
+        handleSelectItem(ctr.selection, this.selectionParams);
+      },
+    }
+  });
+
+  return ctr;
+}
+```
+
+Notes:
+
+- The `@host` decorator comes from the [Aspiration](http://github.com/mnieber/aspiration) library.
+- The `stub` function is used in callback objects to indicate that although the field is initialized with `undefined` it will receive a value later.
+
+## Combining Selection with Highlight
+
+So far, we have shown a rather indirect implementation of selection. This indirect approach becomes useful
+when we add a second facet: Highlight. We will extend the example such that when the user selects an item,
+it will also be highlighted. The same approach can be used to make sure that the Filtering and Highlight
+facets work well together: if the filter is enabled, the highlight moves to an item that is not hidden by the
+filter. In general, there are many possibilities to create complex behaviors this way.
+
+Let's start by looking at the code of the `Highlight` facet:
+
+```
+export class Highlight_highlightItem extends Cbs {
+  id: string = stub();
+  scrollItemIntoView() {}
+}
+
 export class Highlight<ValueT = any> {
   @data id: string | undefined;
-  @data item?: ValueT;
+  @data item?: ValueT;  // ignore this field for now...
 
   @operation @host highlightItem(id: string) {
     return (cbs: Highlight_highlightItem) => {
       this.id = id;
+      maybe(cbs.scrollItemIntoView).bind(cbs)();
     };
   }
 }
+```
 
+We can now update `createContainer` with the `Highlight` facet:
+
+```
+const createContainer() {
+  const ctr = {
+    selection: new Selection(),
+    highlight: new Highlight()
+  };
+
+  setCallbacks(ctr.selection, {
+    selectItem: {
+      select(this: Selection_selectItem): {
+        handleSelectItem(ctr.selection, this.selectionParams);
+        if (!this.selectionParams.isShift && !this.selectionParams.isCtrl) {
+          ctr.highlight.highlightItem(this.selectionParams.itemId);
+        }
+      },
+    }
+  });
+
+  return ctr;
+```
+
+### Adding the Filtering facet
+
+Now, let's add filtering. For brevity, the definition of `Filtering_apply` and `Filtering_enable`
+is skipped. Also, we assume that the logic for highlighting the select item is captured in a policy
+function called `highlightFollowsSelection`, and that `highlightIsCorrectedOnFilterChange` ensures
+that there is still a highlighted item when the filter changes.
+
+```
 export class Filtering<ValueT = any> {
   @data isEnabled: boolean = false;
-  @data filter: FilterT = () => [];
-
+  @data filter: FilterT = (ValueT[]) => [];
   @data inputItems?: Array<ValueT>;
+
   @data get filteredItems() {
     return this.isEnabled ? this.filter(this.inputItems) : this.inputItems;
   }
@@ -172,172 +204,145 @@ export class Filtering<ValueT = any> {
     };
   }
 }
-```
 
-### Implementing the callback objects
+const createContainer() {
+  const ctr = {
+    selection: new Selection(),
+    highlight: new Highlight(),
+    filtering: new Filtering()
+  };
 
-We've set up the basic structure of the facets, but the callbacks still have to be implemented.
-This step happens in the container class. We will use the following requirements:
-
-- the `cbs.selectItem` callback should make a selection that takes the shift and control keys into account.
-  We will not show the code (you can see it
-  [here](https://github.com/mnieber/skandha-facets/blob/main/Selection.ts)) but assume we have a library
-  function `handleSelectItem` for this.
-- items that are selected should become highlighted. We will introduce a reusable policy
-  function for this called `highlightFollowsSelection`.
-- if applying the filter hides the highlighted item then we want to correct the highlight.
-  We will use a another reusable policy called `highlightIsCorrectedOnFilterChange` (shown
-  [here](https://github.com/mnieber/skandha-facets/blob/main/policies/highlightIsCorrectedOnFilterChange.ts))
-
-```
-class TodosCtr {
-  // ...
-
-  constructor() {
-    registerFacets(this);
-    this._setCallbacks();
-  }
-
-  _setCallbacks() {
-    const ctr = this;
-
-    setCallbacks(this.selection, {
-      select: {
-        selectItem(this: Selection_select): {
-          handleSelectItem(ctr.selection, this.selectionParams);
-          highlightFollowsSelection(ctr.selection, this.selectionParams);  // See below
-        },
-      }
-    });
-
-    setCallbacks(this.filtering, {
-      apply: {
-        exit() {
-          FacetPolicies.highlightIsCorrectedOnFilterChange(ctr.filtering);
-        },
+  setCallbacks(ctr.selection, {
+    selectItem: {
+      select(this: Selection_selectItem): {
+        handleSelectItem(ctr.selection, this.selectionParams);
+        highlightFollowsSelection(ctr, this.selectionParams);
       },
-    });
-  }
-}
+    }
+  });
 
-export function highlightFollowsSelection(
-  selection: Selection,
-  selectionParams: SelectionParamsT
-) {
-  const {isCtrl, isShift, itemId} = selectionParams;
-  const ctr = getc(selection);
-  if (!isCtrl && !isShift) {
-    getf(Highlight, ctr).highlightItem(itemId);
-  }
+  setCallbacks(filtering, {
+    apply: {
+      exit() {
+        highlightIsCorrectedOnFilterChange(ctr);
+      },
+    },
+  });
+
+  return ctr;
 }
 ```
 
 Notes:
 
-- The call to `registerFacets` is mandatory. It creates a back-reference to the container in each facet
-  instance.
-- The `getc` gets the container for a given facet, whereas `getf` gets a facet for a given container.
+- There are special callback functions called `enter` and `exit` that are called at the
+  beginning and end of the operation function. An example of using the `exit` callback is shown
+  above.
 
 ### Mapping data onto the container, and between facets
 
 At this point we have a container with facets that perform useful operations, and that interact
-to achieve interesting behaviours. However, the container will not yet work because `Selection.selectableIds`
-and `Filtering.inputItems` are not connected to any data sources. Note that the client of the container
-is responsible for setting `Inputs.todoById` to the collection of todos (at some time after constructing the
-container).
+to achieve interesting behaviours. However, we took a shortcut by hard coding the value of
+`Selection.selectableIds`, and also we forgot to set the value of `Filtering.inputItems`. Skandha
+comes with data mapping functions for this purpose. Let's extend the container with input
+and output data structures:
+
+```
+const createContainer() {
+  // we keep all the existing code that was added above
+
+  ctr['inputs'] = {
+    todoById: {[id: string]: TodoT} = loadTodos();
+  };
+
+  ctr['outputs'] = {
+    filteredTodoById: {[id: string]: TodoT} = {};
+  };
+
+  return ctr;
+```
 
 As a first step, we need to connect `Filtering.inputItems` to `Inputs.todoById` and `Outputs.filteredTodoById`.
 We can think of this as setting up a pipeline, where one of more source facet members are mapped onto a destination
 facet member:
 
 ```
-  _applyPolicies() {
-    mapDataToFacet(
-      [Filtering, 'inputItems'],
-      getm([Inputs, 'todoById']),
-      (x: TodoByIdT) => Object.values(x)
-    )(this);
+mapDataToFacet(
+  ['filtering', 'inputItems'],
+  getm(['inputs', 'todoById']),
+  (x: TodoByIdT) => Object.values(x)
+)(ctr);
 
-    const listToItemById = items => items.reduce((acc: any, x: TodoT) => ({ ...acc, [x.id]: x }), {})
+const listToItemById = items => items.reduce((acc: any, x: TodoT) => ({ ...acc, [x.id]: x }), {})
 
-    mapDataToFacet(
-      [Outputs, 'filteredTodoById'],
-      getm([Filtering, 'filteredItems']),
-      listToItemById,
-    )(this);
-  }
+mapDataToFacet(
+  ['outputs', 'filteredTodoById'],
+  getm(['filtering', 'filteredItems']),
+  listToItemById,
+)(ctr);
 ```
 
 Notes:
 
-- the first argument to `mapDataToFacet` is a getter function that takes the container and returns some data.
-  In this case, it uses the `getm` helper function to return the `todoById` member of the `Inputs` facet.
-- the second argument to `mapDataToFacet` is the facet member that receives the data. SkandhaJS will patch the
-  facet, replacing the `inputItems` member with a `get inputItems()` property that runs the
-  getter function.
+- the first argument to `mapDataToFacet` is a reference to the the facet member that receives the data. SkandhaJS will patch the
+  facet, which - in the above example - means replacing the `inputItems` of `ctr.filtering` with a `get inputItems()` property.
+- the second argument to `mapDataToFacet` is a getter function that takes the container and returns some data.
+  In this case, it uses the `getm` helper function to return `ctr.inputs.todoById`.
 - the third argument is a transformation that is applied to the result of the getter function. In this case,
   it means that `get inputItems()` returns `Object.values(getm(Inputs, 'todoById')(ctr))`,
 
 As the next step, we will connect the list of filtered items to `Selection.selectableIds` (so that selection
 happens in the filtered list). In addition, we will add datamappings for `Selection.items`
-and `Selection.item`:
+and `Highlight.item` (these data mappings allow us to not only access the ids, but also the items themselves):
 
 ```
-  _applyPolicies() {
-    // ...
+mapDataToFacet(
+  ['selection', 'selectableIds'],
+  getm(['outputs', 'filteredTodoById']),
+  (x: TodoByIdT) => Object.keys(x)
+)(ctr);
 
-    mapDataToFacet(
-      [Selection, 'selectableIds'],
-      getm([Outputs, 'filteredTodoById']),
-      (x: TodoByIdT) => Object.keys(x)
-    )(this);
+mapDatasToFacet(
+  ['selection', 'items'],
+  [
+    getm(['selections', 'ids']),
+    getm(['inputs', 'todoById']),
+  ],
+  (ids: string[], todoById: TodoByIdT) => ids.map((id) => todoById[id])
+)(ctr);
 
-    mapDatasToFacet(
-      [Selection, 'items'],
-      [
-        getm([Selection, 'ids']),
-        getm([Inputs, 'todoById']),
-      ],
-      (ids: string[], todoById: TodoByIdT) => ids.map((id) => todoById[id])
-    )(this);
-
-    mapDatasToFacet(
-      [Highlight, 'item'],
-      [
-        getm([Highlight, 'id']),
-        getm([Inputs, 'todoById']),
-      ],
-      (id: string, todoById: TodoByIdT) => todoById[id]
-    )(this);
-  }
+mapDatasToFacet(
+  [Highlight, 'item'],
+  [
+    getm([Highlight, 'id']),
+    getm([Inputs, 'todoById']),
+  ],
+  (id: string, todoById: TodoByIdT) => todoById[id]
+)(ctr);
 ```
 
 We are done: the facets in the container are connected. Note that if we put these mapping policies in a reusable
-library then we can shorten `_applyPolicies` to:
+library then we can shorten the code to the following:
 
 ```
-  _applyPolicies() {
-    // ...
+const filteredTodoById = ['outputs', 'filteredTodoById'];
+const inputTodoById = ['inputs', 'todoById'];
+const filteredItems = ['filtering', 'filteredItems'];
 
-    const policies = [
-      // selection
-      SelectionUsesSelectableIds([Outputs, 'filteredTodoById'], Object.keys),
-      SelectionUsesItemLookUpTable([Inputs, 'todoById']),
+const policies = [
+  // selection
+  selectionUsesSelectableIds(filteredTodoById, Object.keys),
+  selectionUsesItemLookUpTable(inputTodoById),
 
-      // highlighting
-      HighlightUsesItemLookUpTable([Inputs, 'todoById']),
+  // highlighting
+  highlightUsesItemLookUpTable(inputTodoById),
 
-      // filtering
-      FilteringUsesInputItems([Inputs, 'todoById'], Object.values),
-      mapDataToFacet(
-        [Outputs, 'filteredTodoById'],
-        getm([Filtering, 'filteredItems']),
-        listToItemById,
-      ),
-    ]
+  // filtering
+  filteringUsesInputItems(inputTodoById, Object.values),
+  mapDataToFacet(filteredTodoById, getm(filteredItems), listToItemById),
+]
 
-    installPolicies<TodosCtr>(policies, this);
-  }
+installPolicies<TodosCtr>(policies, ctr);
 ```
 
 ### Logging
@@ -355,24 +360,26 @@ used to from Redux:
 
 If you want to render the facets with React then we need to let React know when data changes.
 The [skandha-mobx](http://github.com/mnieber/skandha-mobx) library was created for this purpose.
-It turns each `@data` member into a Mobx property that is either observable or computed. By decorating
-your render function with `observer` you will get a re-render for any changes (in observable facet members)
-in the container:
+It turns each `@data` member into a Mobx property that is either observable or computed:
 
 ```
-class TodosCtr {
-  // ...
-
-  constructor() {
-    registerFacets(this);
-    this._setCallbacks();
-    this._applyPolicies();
-
-    // Turn all facets in the container into observable objects.
-    // Members annotated with @data will become either @observable or @computed.
-    makeCtrObservable(this);
-  }
+registerCtr({
+  ctr: ctr,
+  details: {
+    name: 'TodosCtr',
+    members: {
+      inputs: ctr.inputs,
+      selection: ctr.selection,
+      highlight: ctr.highlight,
+      filtering: ctr.filtering,
+      outputs: ctr.outputs,
+    }
+  },
+});
 ```
+
+This means that by decorating your render function with `observer` you will get a re-render for any changes
+(in observable facet members) in the container.
 
 ## Conclusion
 
