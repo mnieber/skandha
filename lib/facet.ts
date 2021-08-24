@@ -53,11 +53,11 @@ export function registerFacets(
       );
     }
     ctrAdmin.facetByFacetClassName[className] = facet;
-
-    if (skandhaOptions.logging) {
-      console.log('%c     Ctr initialized', 'color: gray', getCtrState(ctr));
-    }
   });
+
+  if (skandhaOptions.logging) {
+    console.log('%c     Ctr initialized', 'color: gray', getCtrState(ctr));
+  }
 }
 
 export function getf(facetClass: ClassT | string, ctr?: any) {
