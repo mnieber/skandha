@@ -1,4 +1,4 @@
-import { getCtrAdmin, getFacetAdmin } from "../internal/utils";
+import { getCtrAdmin, getFacetAdmin } from '../internal/utils';
 
 export function getc<CtrT = any>(facet): CtrT {
   return getFacetAdmin(facet).parentContainer;

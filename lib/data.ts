@@ -1,4 +1,4 @@
-import { getFacetClassAdmin } from "../internal/utils";
+import { getFacetClassAdmin } from '../internal/utils';
 
 export function log(dataHost, dataMember, descriptor: any = undefined) {
   const facetClassAdmin = getFacetClassAdmin(dataHost.constructor);

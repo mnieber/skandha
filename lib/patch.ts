@@ -1,7 +1,7 @@
-import { getf } from "./facet";
-import { facetLogName } from "../internal/logging";
-import { getDataMemberNames } from "./data";
-import { GetterT, ClassMemberT } from "..";
+import { ClassMemberT, GetterT } from '..';
+import { facetLogName } from '../internal/logging';
+import { getDataMemberNames } from './data';
+import { getf } from './facet';
 
 export function mapDataToProp(facet: any, prop: string, getter: () => any) {
   delete facet[prop];
@@ -30,10 +30,10 @@ export function patchFacet(facet: any, members: any, options?: any) {
     } catch {
       console.error(
         `Could not delete property ${prop} from facet ${facetLogName(facet)}` +
-          ". In case you are using mobx (or skandha-mobx), this can happen " +
-          "when makeObservable (or makeCtrObservable) is called before " +
-          "patching a property. Try calling these functions as late as " +
-          "possible."
+          '. In case you are using mobx (or skandha-mobx), this can happen ' +
+          'when makeObservable (or makeCtrObservable) is called before ' +
+          'patching a property. Try calling these functions as late as ' +
+          'possible.'
       );
     }
 

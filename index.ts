@@ -1,23 +1,23 @@
-export { ctrState } from "./internal/logging";
-export { getc, getFacetMemberNames } from "./lib/ctr";
+export { ctrState } from './internal/logging';
+export { getOptions, setOptions } from './internal/options';
+export { getc, getFacetMemberNames } from './lib/ctr';
 export {
-  input,
-  output,
   data,
-  log,
-  getLoggedMemberNames,
   getDataMemberNames,
-} from "./lib/data";
+  getLoggedMemberNames,
+  input,
+  log,
+  output,
+} from './lib/data';
+export { facet, getf, getm, registerFacets } from './lib/facet';
+export { installPolicies } from './lib/install';
+export { getOperationMemberNames, operation } from './lib/operation';
 export {
-  mapDataToFacet,
   mapDatasToFacet,
-  patchFacet,
+  mapDataToFacet,
   mapDataToProp,
-} from "./lib/patch";
-export { getOptions, setOptions } from "./internal/options";
-export { operation, getOperationMemberNames } from "./lib/operation";
-export { facet, registerFacets, getm, getf } from "./lib/facet";
-export { installPolicies } from "./lib/install";
+  patchFacet,
+} from './lib/patch';
 
 export type ClassT = any;
 export type MemberNameT = string;

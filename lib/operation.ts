@@ -1,6 +1,6 @@
-import { options } from "../internal/options";
-import { log } from "../internal/logging";
-import { getFacetClassAdmin } from "../internal/utils";
+import { log } from '../internal/logging';
+import { options } from '../internal/options';
+import { getFacetClassAdmin } from '../internal/utils';
 
 function _operation(target, propertyName, descriptor, punctualOptions) {
   const f = descriptor.value;
@@ -9,7 +9,7 @@ function _operation(target, propertyName, descriptor, punctualOptions) {
     facetClassAdmin.operationMemberNames ?? [];
   facetClassAdmin.operationMemberNames.push(propertyName);
 
-  if (typeof descriptor.value === "function") {
+  if (typeof descriptor.value === 'function') {
     descriptor.value = !!punctualOptions.async
       ? async function (this: any, ...args) {
           const facet = this;

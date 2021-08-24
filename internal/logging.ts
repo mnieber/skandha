@@ -1,11 +1,11 @@
-import { getLoggedMemberNames } from "../lib/data";
-import { getCtrAdmin, getFacetAdmin } from "../internal/utils";
-import { getc, getFacetMemberNames } from "../lib/ctr";
-import { options } from "./options";
+import { getCtrAdmin, getFacetAdmin } from '../internal/utils';
+import { getc, getFacetMemberNames } from '../lib/ctr';
+import { getLoggedMemberNames } from '../lib/data';
+import { options } from './options';
 
 export function _defaultFacetLogName(facet: any) {
   const ctr = getc(facet);
-  const prefix = ctr ? ctr.constructor.name + "/" : "";
+  const prefix = ctr ? ctr.constructor.name + '/' : '';
   return prefix + facet.constructor.name;
 }
 
@@ -16,7 +16,7 @@ export function facetLogName(facet: any) {
 function camelToSnake(string) {
   return string
     .replace(/[\w]([A-Z])/g, function (m) {
-      return m[0] + "_" + m[1];
+      return m[0] + '_' + m[1];
     })
     .toLowerCase();
 }
@@ -29,14 +29,14 @@ export function log(facet, operationMember, args, start) {
   const getCtrState = ctrAdmin?.ctrStateOverride ?? ctrState;
   const getState = ctr ? () => getCtrState(ctr) : () => facetState(facet);
   const operationName = opName(operationMember);
-  const label = facetLogName(facet) + "." + operationName;
+  const label = facetLogName(facet) + '.' + operationName;
 
   if (start) {
     console.group(label);
-    console.log("%c           args: ", "color: gray", args);
-    console.log("%c     state", "color: gray", getState());
+    console.log('%c           args: ', 'color: gray', args);
+    console.log('%c     state', 'color: gray', getState());
   } else {
-    console.log("%c     next", "color: gray", getState());
+    console.log('%c     next', 'color: gray', getState());
     // @ts-ignore
     console.groupEnd(label);
   }

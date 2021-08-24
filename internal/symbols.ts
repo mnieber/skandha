@@ -1,3 +1,3 @@
 export const symbols = {
-  admin: Symbol("skandha administration"),
+  admin: Symbol('skandha administration'),
 };

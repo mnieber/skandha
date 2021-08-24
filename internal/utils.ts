@@ -1,4 +1,4 @@
-import { symbols } from "./symbols";
+import { symbols } from './symbols';
 
 export function getOrCreate(obj, key, fn) {
   if (!obj[key]) {
