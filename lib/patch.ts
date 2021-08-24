@@ -55,6 +55,8 @@ export const mapDataToFacet =
     const patch = {
       [toMember]: {
         get: () => {
+          // This context variable is not necessary, it has redundant data and
+          // could be inlined, but it makes debugging easier.
           const context = {
             ctr: toCtr ?? ctr,
             getter,

@@ -12,8 +12,7 @@ be highlighted. As we will see, these interactions are achieved by implementing 
 
 **NOTE**
 
-In a Skandha container, behaviors are implemented using classes that are called facets, and they are found by their class name. Therefore you
-need to disable the mangling of classnames in your minification tool, or disable minification completely. A future version of Skandha will allow you to declare the facet names explicitly, removing the dependency on the class name.
+In a Skandha container, behaviors are implemented using classes that are called facets, and they are found by their class name. The recommendation is to add a `static className` function to each facet class. If you omit this function, then Skandha will use the automatically generated class name, which can cause problems with the mangling of classnames in your minification tool.
 
 ---
 

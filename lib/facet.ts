@@ -1,13 +1,14 @@
-import { setCtr } from "./ctr";
+import { ClassMemberT, ClassT, GetterT } from '..';
+import { ctrState as getCtrState } from '../internal/logging';
+import { options as skandhaOptions } from '../internal/options';
 import {
-  getCtrClassAdmin,
   getCtrAdmin,
+  getCtrClassAdmin,
   getFacetAdmin,
-} from "../internal/utils";
-import { options as skandhaOptions } from "../internal/options";
-import { ctrState as getCtrState } from "../internal/logging";
-import { ClassT, GetterT, ClassMemberT } from "..";
+} from '../internal/utils';
+import { setCtr } from './ctr';
 
+// Registers facetMember as a facet in the facetHost class
 export function facet(facetHost, facetMember, descriptor = undefined) {
   const ctrClassAdmin = getCtrClassAdmin(facetHost.constructor);
   ctrClassAdmin.facetMembers = ctrClassAdmin.facetMembers ?? [];
@@ -15,13 +16,17 @@ export function facet(facetHost, facetMember, descriptor = undefined) {
   return descriptor;
 }
 
+export function facetClassName(facetClass: ClassT) {
+  return facetClass.className ? facetClass.className() : facetClass.name;
+}
+
+// Registers members of ctr as facets in ctr. Each facet is registered by its class name.
 export function registerFacets(
   ctr,
   options: { name?: string; members?: string[]; ctrState?: Function }
 ) {
-  const ctrName = options.name ?? ctr.constructor.name;
-
   const ctrAdmin = getCtrAdmin(ctr);
+  ctrAdmin.logName = options.name ?? ctr.constructor.name;
   ctrAdmin.facetMembers = ctrAdmin.facetMembers ?? [];
   ctrAdmin.facetByFacetClassName = ctrAdmin.facetByFacetClassName ?? {};
   ctrAdmin.ctrStateOverride = options.ctrState;
@@ -37,29 +42,37 @@ export function registerFacets(
     setCtr(facet, ctr);
 
     const facetAdmin = getFacetAdmin(facet);
-    facetAdmin.logName = `${ctrName}/${facet.constructor.name}`;
+    facetAdmin.logName = `${ctrAdmin.logName}/${facetClassName(
+      facet.constructor
+    )}`;
 
-    const className = facet.constructor.name;
+    const className = facetClassName(facet.constructor);
     if (ctrAdmin.facetByFacetClassName[className] !== undefined) {
       console.error(
-        `Two facets of same type ${className} in container ${ctrName}`
+        `Two facets of same type ${className} in container ${ctrAdmin.logName}`
       );
     }
     ctrAdmin.facetByFacetClassName[className] = facet;
 
     if (skandhaOptions.logging) {
-      console.log("%c     Ctr initialized", "color: gray", getCtrState(ctr));
+      console.log('%c     Ctr initialized', 'color: gray', getCtrState(ctr));
     }
   });
 }
 
-export function getf(facetClass: ClassT, ctr?: any) {
+export function getf(facetClass: ClassT | string, ctr?: any) {
   if (!ctr) return (ctr: any) => getf(facetClass, ctr);
 
-  const facet = getCtrAdmin(ctr).facetByFacetClassName?.[facetClass.name];
+  const facet =
+    typeof facetClass === 'string'
+      ? (ctr as any)[facetClass]
+      : getCtrAdmin(ctr).facetByFacetClassName?.[facetClassName(facetClass)];
+
   if (!facet) {
+    const facetName =
+      facetClass === 'string' ? facetClass : facetClassName(facetClass);
     console.error(
-      `No facet ${facetClass.name} in container ${ctr.constructor.name}`
+      `No facet ${facetName} in container ${getCtrAdmin(ctr).logName}`
     );
   }
   return facet;
@@ -68,8 +81,8 @@ export function getf(facetClass: ClassT, ctr?: any) {
 export function getm<T = any>(classMember: ClassMemberT): GetterT<T> {
   const f = (ctr: any) =>
     getf(classMember[0], classMember[2] ?? ctr)[classMember[1]];
-  // Set some properties on f to easy debugging later
-  f.facetClassName = classMember[0].name;
+  // Set some properties on f to ease debugging later
+  f.facetClassName = facetClassName(classMember[0]);
   f.facetMemberName = classMember[1];
   return f;
 }
