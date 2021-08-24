@@ -258,9 +258,11 @@ const createContainer() {
     filteredTodoById: {[id: string]: TodoT} = {};
   };
 
+  registerFacets(ctr, { name: 'TodosCtr' });
   return ctr;
 ```
 
+Note the call to `registerFacets`, which is needed for the data mapping functions that we are about to introduce.
 As a first step, we need to connect `Filtering.inputItems` to `Inputs.todoById` and `Outputs.filteredTodoById`.
 We can think of this as setting up a pipeline, where one of more source facet members are mapped onto a destination
 facet member:
@@ -288,7 +290,10 @@ Notes:
 - the second argument to `mapDataToFacet` is a getter function that takes the container and returns some data.
   In this case, it uses the `getm` helper function to return `ctr.inputs.todoById`.
 - the third argument is a transformation that is applied to the result of the getter function. In this case,
-  it means that `get inputItems()` returns `Object.values(getm(Inputs, 'todoById')(ctr))`,
+  it means that `get inputItems()` returns `Object.values(getm(Inputs, 'todoById')(ctr))`.
+- in the calls to `mapDataToFacet`, we have to be careful to correctly spell the facet member names, such as 'filtering'.
+  It's also possible to use a class instead of a member name. For example, we could replace `['filtering', 'inputItems']` with
+  `[Filtering, 'inputItems']`.
 
 As the next step, we will connect the list of filtered items to `Selection.selectableIds` (so that selection
 happens in the filtered list). In addition, we will add datamappings for `Selection.items`
@@ -359,20 +364,14 @@ used to from Redux:
 
 If you want to render the facets with React then we need to let React know when data changes.
 The [skandha-mobx](http://github.com/mnieber/skandha-mobx) library was created for this purpose.
-It turns each `@data` member into a Mobx property that is either observable or computed:
+It has a `registerCtr` function that turns each `@data` member into a Mobx property that is
+either observable or computed (this function call replaces the call to `registerFacets`):
 
 ```
 registerCtr({
   ctr: ctr,
   details: {
     name: 'TodosCtr',
-    members: {
-      inputs: ctr.inputs,
-      selection: ctr.selection,
-      highlight: ctr.highlight,
-      filtering: ctr.filtering,
-      outputs: ctr.outputs,
-    }
   },
 });
 ```
