@@ -1,4 +1,4 @@
-export { ctrState } from './internal/logging';
+export { getCtrState } from './internal/logging';
 export { getOptions, setOptions } from './internal/options';
 export { getc, getFacetMemberNames } from './lib/ctr';
 export {

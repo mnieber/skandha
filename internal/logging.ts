@@ -25,8 +25,6 @@ const opName = (operationMember) => camelToSnake(operationMember).toUpperCase();
 
 export function log(facet, operationMember, args, start) {
   const ctr = getc(facet);
-  const ctrAdmin = ctr ? getCtrAdmin(ctr) : undefined;
-  const getCtrState = ctrAdmin?.ctrStateOverride ?? ctrState;
   const getState = ctr ? () => getCtrState(ctr) : () => facetState(facet);
   const operationName = opName(operationMember);
   const label = facetLogName(facet) + '.' + operationName;
@@ -56,11 +54,15 @@ export function facetState(facet) {
   }, {});
 }
 
-export function ctrState(ctr) {
+export function defaultGetCtrState(ctr) {
   if (ctr) {
     return getFacetMemberNames(ctr).reduce((acc, facetMemberName) => {
       const facet = ctr[facetMemberName];
       return { ...acc, [facetMemberName]: facetState(facet) };
     }, {});
   }
+}
+
+export function getCtrState(ctr) {
+  return (getCtrAdmin(ctr)?.ctrStateOverride ?? defaultGetCtrState)(ctr);
 }

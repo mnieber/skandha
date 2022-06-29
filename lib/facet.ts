@@ -1,5 +1,5 @@
 import { ClassMemberT, ClassT, GetterT } from '..';
-import { ctrState as getCtrState } from '../internal/logging';
+import { getCtrState } from '../internal/logging';
 import { options as skandhaOptions } from '../internal/options';
 import {
   getCtrAdmin,
@@ -56,7 +56,12 @@ export function registerFacets(
   });
 
   if (skandhaOptions.logging) {
-    console.log('%c     Ctr initialized', 'color: gray', getCtrState(ctr));
+    console.log(
+      '%c     %s ctr initialized',
+      'color: gray',
+      ctrAdmin.logName,
+      getCtrState(ctr)
+    );
   }
 }
 
