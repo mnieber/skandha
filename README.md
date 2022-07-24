@@ -83,7 +83,7 @@ class Selection<ValueT> {
   @data anchorId?: string;
   @data items?: Array<ValueT>;  // ignore this field for now...
 
-  @operation @host selectItem(selectionParams: SelectionParamsT) {
+  @operation @host(["selectionParams"]) selectItem(selectionParams: SelectionParamsT) {
     return (cbs: Selection_selectItem) => {
       if (!this.selectableIds.includes(selectionParams.itemId)) {
         throw Error(`Invalid id: ${selectionParams.itemId}`);
@@ -141,7 +141,7 @@ export class Highlight<ValueT = any> {
   @data id: string | undefined;
   @data item?: ValueT;  // ignore this field for now...
 
-  @operation @host highlightItem(id: string) {
+  @operation @host(["id"]) highlightItem(id: string) {
     return (cbs: Highlight_highlightItem) => {
       this.id = id;
       maybe(cbs.scrollItemIntoView).bind(cbs)();
@@ -190,14 +190,14 @@ export class Filtering<ValueT = any> {
     return this.isEnabled ? this.filter(this.inputItems) : this.inputItems;
   }
 
-  @operation @host apply(filter: FilterT) {
+  @operation @host(["filter"]) apply(filter: FilterT) {
     return (cbs: Filtering_apply) => {
       this.filter = filter;
       this.isEnabled = true;
     };
   }
 
-  @operation @host setEnabled(flag: boolean) {
+  @operation @host(["flag"]) setEnabled(flag: boolean) {
     return (cbs: Filtering_setEnabled) => {
       this.isEnabled = flag;
     };
