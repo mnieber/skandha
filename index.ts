@@ -1,5 +1,6 @@
 export { getCtrState } from './internal/logging';
 export { getOptions, setOptions } from './internal/options';
+export { createConnector } from './lib/Connector';
 export { getc, getFacetMemberNames } from './lib/ctr';
 export {
   data,
@@ -9,17 +10,9 @@ export {
   log,
   output,
 } from './lib/data';
-export { facet, getf, getm, registerFacets } from './lib/facet';
+export { facet, getf, registerFacets } from './lib/facet';
 export { installPolicies } from './lib/install';
 export { getOperationMemberNames, operation } from './lib/operation';
-export {
-  mapDatasToFacet,
-  mapDataToFacet,
-  mapDataToProp,
-  patchFacet,
-} from './lib/patch';
+export { mapDataToProp } from './lib/patch';
 
 export type ClassT = any;
-export type MemberNameT = string;
-export type ClassMemberT = [ClassT, MemberNameT, any?];
-export type GetterT<T = any> = (ctr: any) => T;

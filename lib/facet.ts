@@ -1,4 +1,4 @@
-import { ClassMemberT, ClassT, GetterT } from '..';
+import { ClassT } from '..';
 import { getCtrState } from '../internal/logging';
 import { options as skandhaOptions } from '../internal/options';
 import {
@@ -81,13 +81,4 @@ export function getf(facetClass: ClassT | string, ctr?: any) {
     );
   }
   return facet;
-}
-
-export function getm<T = any>(classMember: ClassMemberT): GetterT<T> {
-  const f = (ctr: any) =>
-    getf(classMember[0], classMember[2] ?? ctr)[classMember[1]];
-  // Set some properties on f to ease debugging later
-  f.facetClassName = facetClassName(classMember[0]);
-  f.facetMemberName = classMember[1];
-  return f;
 }
