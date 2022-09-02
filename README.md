@@ -7,8 +7,6 @@ selection, highlighting, filtering, drag-and-drop, etc. The only requirement for
 that every item in the container has a unique id. SkandhaJS allows you to combine behaviors and make them interact properly. For example, when selecting an item you may want the item also to
 be highlighted. As we will see, these interactions are achieved by implementing callback functions.
 
----
-
 ## Links
 
 - The [skandha](http://github.com/mnieber/skandha) library contains the basic building blocks
@@ -20,6 +18,7 @@ be highlighted. As we will see, these interactions are achieved by implementing 
 ## Snippet
 
 ```
+// file: Selection.ts
 import { input, output, operation } from 'skandha';
 import { host, stub } from 'aspiration';
 
@@ -58,10 +57,16 @@ We shall see later how callbacks are installed in a facet. For now, it's suffici
 ## Snippet
 
 ```
+// file: Selection.ts
 export class Selection_selectItem extends Cbs {
   selectionParams: SelectionParamsT = stub();
   select() {}
 }
+```
+
+```
+// file: createContainer.ts
+import { registerCtr } from 'skandha';
 
 const createContainer() {
   const ctr = {
@@ -76,6 +81,8 @@ const createContainer() {
     }
   });
 
+  // If you omit `members` then all fields of `ctr` are included.
+  registerCtr(ctr, { name: 'TodosCtr', members: ['selection'] });
   return ctr;
 }
 ```
@@ -88,9 +95,17 @@ In the above snippet we see that the `Selection_selectItem` class defines the ca
 
 In the same snippet we see that `setCallbacks` is called to install the `select` callback function. This callback function forwards to a helper function called `handleSelectItem`. Note that the `Selection_selectItem` instance is available through the `this` constant.
 
+## Fact: the registerCtr function registers the container with SkandhaJS
+
+The purpose of calling registerCtr on the container is twofold:
+
+- it makes it possible to look up a facet by its name or class, e.g. `getf(ctr, Selection)` returns `ctr.selection`.
+- it tells SkandhaJS what facets should be included in log reports. When the client calls any facet function that is decorated with @operation then SkandhaJS will log the entire container before and after the operation was executed. Logging can be enabled using the `setOptions` function.
+
 ## Snippet: the handleSelectItem functon
 
 ```
+// file: handleSelectItem.ts
 export function handleSelectItem(
   facet: Selection,
   { itemId, isShift, isCtrl }: SelectionParamsT
@@ -125,6 +140,7 @@ For completeness, we show how `handleSelectItem` is implemented. Note that this 
 ## Snippet: the Highlight facet
 
 ```
+// file: Highlight.ts
 export class Highlight_highlightItem extends Cbs {
   id: string = stub();
   scrollItemIntoView() {}
@@ -152,6 +168,7 @@ The `Highlight` snippet has a similar structure as the `Selection` facet. It has
 ## Snippet: a container with Selection and Highlight
 
 ```
+// file: createContainer.ts
 const createContainer() {
   const ctr = {
     selection: new Selection(),
@@ -183,6 +200,7 @@ Above we see for the first time how SkandhaJS helps you to create co-ordinated b
 ## Snippet: a container with Selection, Highlight and Filtering
 
 ```
+// file: createContainer.ts
 const createContainer() {
   const ctr = {
     selection: new Selection(),
@@ -218,6 +236,7 @@ In the snippet we add a filtering facet that has an `apply` host function. In th
 ## Snippet: mapping data onto each facet
 
 ```
+// file: createContainer.ts
 import * from 'ramda' as R;
 
 const connectContainer(ctr: any) {
@@ -250,7 +269,7 @@ The snippet contains three steps. In the first step we declare the objects, such
 
 ### Logging
 
-By calling `setOptions({logging: true})`, the Skandha library allows you to inspect each facet before and
+By calling `setOptions({logging: true})`, the SkandhaJS library allows you to inspect each facet before and
 after calling an operation. An operation is any facet member function decorated with @operation.
 This will log Facet members that are decorated with `@data` (or `@input`, or `@output`) in a way that looks similar to what you are used to from Redux:
 
@@ -268,9 +287,7 @@ either observable or computed:
 ```
 registerCtr({
   ctr: ctr,
-  details: {
-    name: 'TodosCtr',
-  },
+  options: { name: 'TodosCtr'},
 });
 ```
 

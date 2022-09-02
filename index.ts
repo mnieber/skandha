@@ -10,9 +10,11 @@ export {
   log,
   output,
 } from './lib/data';
-export { facet, getf, registerFacets } from './lib/facet';
+export { getf } from './lib/facet';
 export { installPolicies } from './lib/install';
 export { getOperationMemberNames, operation } from './lib/operation';
 export { mapDataToProp } from './lib/patch';
+export { registerCtr } from './lib/registerCtr';
+export type { OptionsT as RegisterCtrOptionsT } from './lib/registerCtr';
 
 export type ClassT = any;

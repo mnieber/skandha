@@ -13,10 +13,6 @@ export const zip = (arr: any, ...arrs: any) => {
   );
 };
 
-export function getCtrClassAdmin(ctrClass) {
-  return getOrCreate(ctrClass, symbols.admin, () => ({}));
-}
-
 export function getCtrAdmin(ctr) {
   return getOrCreate(ctr, symbols.admin, () => ({}));
 }
