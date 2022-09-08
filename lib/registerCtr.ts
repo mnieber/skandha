@@ -8,7 +8,7 @@ import { facetClassName } from './facet';
 
 export type OptionsT = {
   name: string;
-  members?: string[];
+  facets?: string[];
   ctrState?: Function;
 };
 
@@ -19,14 +19,14 @@ export function registerCtr(ctr: any, options: OptionsT) {
   ctrAdmin.facetByFacetClassName = ctrAdmin.facetByFacetClassName ?? {};
   ctrAdmin.ctrStateOverride = options.ctrState;
 
-  (options.members ?? Object.getOwnPropertyNames(ctr)).forEach((member) => {
-    const facet = ctr[member];
+  (options.facets ?? Object.getOwnPropertyNames(ctr)).forEach((facetName) => {
+    const facet = ctr[facetName];
     setCtr(facet, ctr);
-    ctrAdmin.facetMembers.push(member);
+    ctrAdmin.facetMembers.push(facetName);
 
     if (!facet.constructor.className) {
       console.error(
-        `Facet ${member} of container ${ctrAdmin.logName} ` +
+        `Facet ${facetName} of container ${ctrAdmin.logName} ` +
           `does not have a static className function`
       );
     }
