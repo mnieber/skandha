@@ -69,8 +69,8 @@ class Connector {
   };
 }
 
-export const createConnector = (obj: any) => {
-  const con = new Connector(obj);
+export const createConnector = (obj: any, options?: OptionsT) => {
+  const con = new Connector(obj, options);
   return new Proxy(con, {
     get: (target: any, key: string) => {
       return target[key] ?? target.getOrCreateEntity(key);
