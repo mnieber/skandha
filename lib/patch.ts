@@ -6,3 +6,9 @@ export function mapDataToProp(facet: any, prop: string, getter: () => any) {
     configurable: true,
   });
 }
+
+export function mapDataToProps(...mappings: any[]) {
+  for (const mapping of mappings) {
+    mapDataToProp(mapping[0][0], mapping[0][1], mapping[1]);
+  }
+}
