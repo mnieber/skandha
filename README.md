@@ -75,31 +75,31 @@ In this example we will take a look at a todos container. It uses the `Selection
 import { Selection_selectItem } from 'SelectionCbs';
 
 const createContainer() {
-  const ctr = {
+  const todosCtr = {
     selection: new Selection(),
     highlight: new Highlight(),
     filtering: new Filtering()
   };
 
-  setCallbacks(ctr.selection, {
+  setCallbacks(todosCtr.selection, {
     selectItem: {
       select(this: Selection_selectItem): {
-        handleSelectItem(ctr.selection, this.selectionParams);
-        highlightFollowsSelection(ctr, this.selectionParams);
+        handleSelectItem(todosCtr.selection, this.selectionParams);
+        highlightFollowsSelection(todosCtr, this.selectionParams);
       },
     }
   });
 
-  setCallbacks(ctr.filtering, {
+  setCallbacks(todosCtr.filtering, {
     apply: {
       exit() {
-        highlightIsCorrectedOnFilterChange(ctr);
+        highlightIsCorrectedOnFilterChange(todosCtr);
       },
     },
   });
 
-  registerCtr({ ctr: ctr, options: { name: 'Todos'} });
-  return ctr;
+  registerCtr({ ctr: todosCtr, options: { name: 'Todos'} });
+  return todosCtr;
 }
 ```
 
@@ -143,7 +143,7 @@ export function handleSelectItem(
 
 ## Note: the todos container has selection, highlight and filtering
 
-In `createContainer.ts` we see how `createContainer()` creates a `ctr` object that has three facets: selection, highlight and filtering. After creating the container, the `installCallbacks()` function is called to determine how the facet operations are implemented. In this case, we only install the `select()` callback function.
+In `createContainer.ts` we see how `createContainer()` creates a `todosCtr` object that has three facets: selection, highlight and filtering. After creating the container, the `installCallbacks()` function is called to determine how the facet operations are implemented. In this case, we only install the `select()` callback function.
 
 ## Fact: callbacks are installed with `setCallbacks()`
 
@@ -155,7 +155,7 @@ An important advantage of using callbacks is that they can also take care of sid
 
 ## Fact: the callback function can access the callbacks object through `this`.
 
-When the clients calls `ctr.selection.selectItem()` and `select()` is called back, then all arguments of the operation are available through `this`. In our case, we see that the `select()` callback function is accessing `this.selectionParams`.
+When the clients calls `todosCtr.selection.selectItem()` and `select()` is called back, then all arguments of the operation are available through `this`. In our case, we see that the `select()` callback function is accessing `this.selectionParams`.
 
 ## Fact: the `exit()` callback function is called at the end of an operation
 
@@ -163,7 +163,7 @@ In `createContainer.ts` we also have a `Filtering` facet that has an `apply(f)` 
 
 ## Fact: the `registerCtr()` allows SkandhaJS to introspect the container
 
-At the end of `createContainer.ts` we call `registerCtr()` so that SkandhaJS can introspect the container. This is necessary for two reasons. First, it makes it possible to look up a facet by its name or class, e.g. `getf(ctr, Selection)` returns `ctr.selection`. Second, it informs SkandhaJS how to log all facets of the container
+At the end of `createContainer.ts` we call `registerCtr()` so that SkandhaJS can introspect the container. This is necessary for two reasons. First, it makes it possible to look up a facet by its name or class, e.g. `getf(todosCtr, Selection)` returns `todosCtr.selection`. Second, it informs SkandhaJS how to log all facets of the container
 
 ## Example: a complete Selection facet
 
@@ -232,40 +232,39 @@ We've seen how facets are implemented, and how they can be added to a container 
 import * from 'ramda' as R;
 import { mapDataToProps } from 'skandha';
 
-const connectContainer = (ctr: any) => {
-  const data = {
-    inputs: { todos: loadTodos() },
-    outputs: { filteredTodoById: {} },
-  };
-
-  const todos = {
+const createContainer = () => {
+  const todosCtr = {
+    data: {
+      todos: loadTodos(),
+      filteredTodoById: {},
+    },
     selection: new Selection(),
     highlight: new Highlight(),
     filtering: new Filtering(),
   }
 
-  const lookUpTodo = (id: string) => this.data.outputs.filteredTodoById[id];
+  const lookUpTodo = (id?: string) => id ? todosCtr.data.filteredTodoById[id] : undefined;
 
   mapDataToProps(
     [
-      [this.todos.filtering, 'inputItems'],
-      () => this.data.inputs.todos
+      [todosCtr.filtering, 'inputItems'],
+      () => todosCtr.data.todos
     ],
     [
-      [this.data.outputs, 'filteredTodoById'],
-      () => R.indexBy('id')(this.todos.filtering.filteredItems)
+      [todosCtr.data, 'filteredTodoById'],
+      () => R.indexBy('id')(todosCtr.filtering.filteredItems)
     ],
     [
-      [this.todos.selection, 'selectableIds'],
-      () => R.keys(this.data.outputs.filteredTodoById)
+      [todosCtr.selection, 'selectableIds'],
+      () => R.keys(todosCtr.data.filteredTodoById)
     ],
     [
-      [this.todos.selection, 'item'],
-      () => R.map(lookUpTodo, this.todos.selection.ids)
+      [todosCtr.selection, 'item'],
+      () => R.map(lookUpTodo, todosCtr.selection.ids)
     ],
     [
-      [this.todos.highlight, 'item'],
-      () => lookUpTodo(this.todos.highlight.id)
+      [todosCtr.highlight, 'item'],
+      () => lookUpTodo(todosCtr.highlight.id)
     ],
   )
 }
@@ -275,7 +274,7 @@ setOptions({logging: true});
 
 ## Fact: the `mapDataToProps()` function maps data between objects
 
-The `mapDataToProp()` function takes a container, field name and function then it turns that field into a `get` property that executes the given function. The `mapDataToProps()` is a small convenience function that calls `mapDataToProp()` on each of its arguments. In our example, we see that the `data.inputs.todos` field is mapped onto the `todos.filtering.inputItems` field.
+The `mapDataToProp()` function takes a container, field name and function then it turns that field into a `get` property that executes the given function. The `mapDataToProps()` is a small convenience function that calls `mapDataToProp()` on each of its arguments. In our example, we see that the `todosCtr.data.todos` field is mapped onto the `todosCtr.filtering.inputItems` field.
 
 ## Fact: logging can be enabled using `setOptions()`
 
