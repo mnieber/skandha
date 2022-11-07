@@ -25,7 +25,7 @@ The goal of SkandhaJS is to provide data containers that have reusable behaviors
 - aspiration: a library that implements a form of Aspect Oriented Programming using callback functions.
 - mapDataToProps: a helper function that maps data from one object to another. It's also used to map data between facets.
 - registerCtr: the function that tells SkandhaJS which containers and facets exist.
-- setCallbacks: the function that installs the callbacks objects that are used by a facet.
+- setCallbackMap: the function that installs the callbacks objects that are used by a facet.
 
 ## Example: a simplified Selection facet
 
@@ -81,7 +81,7 @@ const createContainer() {
     filtering: new Filtering()
   };
 
-  setCallbacks(todosCtr.selection, {
+  setCallbackMap(todosCtr.selection, {
     selectItem: {
       select(this: Selection_selectItem): {
         handleSelectItem(todosCtr.selection, this.selectionParams);
@@ -90,7 +90,7 @@ const createContainer() {
     }
   });
 
-  setCallbacks(todosCtr.filtering, {
+  setCallbackMap(todosCtr.filtering, {
     apply: {
       exit() {
         highlightIsCorrectedOnFilterChange(todosCtr);
@@ -145,9 +145,9 @@ export function handleSelectItem(
 
 In `createContainer.ts` we see how `createContainer()` creates a `todosCtr` object that has three facets: selection, highlight and filtering. After creating the container, the `installCallbacks()` function is called to determine how the facet operations are implemented. In this case, we only install the `select()` callback function.
 
-## Fact: callbacks are installed with `setCallbacks()`
+## Fact: callbacks are installed with `setCallbackMap()`
 
-We call `setCallbacks()` to install a callbacks object for each operation of the `Selection` facet. In our case we only have one operation (`selectItem()`) that has only one callback (`select()`). This callback function calls `handleSelectItem()` to take care of doing the selection. This is a typical pattern: you want the call to `setCallbacks()` to be as short and readable as possible, so that it's easy to understand what happens in each operation of each facet.
+We call `setCallbackMap()` to install a callbacks object for each operation of the `Selection` facet. In our case we only have one operation (`selectItem()`) that has only one callback (`select()`). This callback function calls `handleSelectItem()` to take care of doing the selection. This is a typical pattern: you want the call to `setCallbackMap()` to be as short and readable as possible, so that it's easy to understand what happens in each operation of each facet.
 
 ## Fact: callbacks can take care of side effects
 
@@ -209,7 +209,7 @@ export class Selection_selectItem extends Cbs {
 
 The `@host` decorator comes from the `Aspiration` library. When you call a function `f` that is decorated with `@host` then the following happens:
 
-- Aspiration looks up the callbacks object for the operation (that was installed with `setCallbacks()`)
+- Aspiration looks up the callbacks object for the operation (that was installed with `setCallbackMap()`)
 - it copies the operation arguments to the callbacks object (so that callback functions can access these arguments)
 - if calls `f(arguments)(callbacksObject)`.
 
@@ -230,7 +230,7 @@ We've seen how facets are implemented, and how they can be added to a container 
 ```
 // file: createContainer.ts
 import * from 'ramda' as R;
-import { mapDataToProps } from 'skandha';
+import { mapDataToProps, pmap } from 'skandha';
 
 const createContainer = () => {
   const todosCtr = {
@@ -246,26 +246,26 @@ const createContainer = () => {
   const lookUpTodo = (id?: string) => id ? todosCtr.data.filteredTodoById[id] : undefined;
 
   mapDataToProps(
-    [
+    pmap(
       [todosCtr.filtering, 'inputItems'],
       () => todosCtr.data.todos
-    ],
-    [
+    ),
+    pmap(
       [todosCtr.data, 'filteredTodoById'],
       () => R.indexBy('id')(todosCtr.filtering.filteredItems)
-    ],
-    [
+    ),
+    pmap(
       [todosCtr.selection, 'selectableIds'],
       () => R.keys(todosCtr.data.filteredTodoById)
-    ],
-    [
+    ),
+    pmap(
       [todosCtr.selection, 'item'],
       () => R.map(lookUpTodo, todosCtr.selection.ids)
-    ],
-    [
+    ),
+    pmap(
       [todosCtr.highlight, 'item'],
       () => lookUpTodo(todosCtr.highlight.id)
-    ],
+    ),
   )
 }
 
@@ -275,6 +275,10 @@ setOptions({logging: true});
 ## Fact: the `mapDataToProps()` function maps data between objects
 
 The `mapDataToProp()` function takes a container, field name and function then it turns that field into a `get` property that executes the given function. The `mapDataToProps()` is a small convenience function that calls `mapDataToProp()` on each of its arguments. In our example, we see that the `todosCtr.data.todos` field is mapped onto the `todosCtr.filtering.inputItems` field.
+
+## Fact: the `pmap()` function adds type-checking
+
+The `pmap()` function takes two arguments. The first argument is an array that has a container and a container-member. The second argument is a function. The `pmap` function checks that the output of this function can be stored in the container-member (if not, then a compile-time error results). It returns an array that contains its two arguments (because that is the format that `mapDataToProps` expects). As you can see, `pmap` does not do any useful work at run-time, but it adds type-checking at compile-time.
 
 ## Fact: logging can be enabled using `setOptions()`
 
