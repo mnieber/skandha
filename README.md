@@ -2,7 +2,13 @@
 
 ## Rationale
 
-The goal of SkandhaJS is to provide data containers that have reusable behaviors, such as selection, highlighting, filtering, drag-and-drop, etc. The only requirement for using these containers is that every item in the container has a unique id. SkandhaJS allows you to combine behaviors that have interactions. For example, when selecting an item you may want the item also to be highlighted. As we will see, these interactions are implemented in callback functions.
+The goal of SkandhaJS is to provide data containers that have reusable behaviors, such as selection, highlighting, filtering, drag-and-drop, etc. The only requirement for using these containers is that every item in the container has a unique id. SkandhaJS allows you to combine behaviors that have interactions.
+
+As a brief illustration, consider the example of selecting a todo in a list of todos. We'll assume the application has a state that stores a list of todos, associated selection data (`todoSelection`) and associated highlight data (`todoHighlight`):
+
+1. When the user clicks on a todo in a todo-list, the list component calls `todoSelection.selectItem(todo.id, shift, ctrl)`.
+2. The `aspiration` library intercepts the call in order to prepare a so-called `callbackMap`. To do its work of updating the selection data, the `todoSelection.selectItem` can use any of the callbacks in this map.
+3. When a callback is executed, then the callback function can look up and change related data. For example, the `select` callback can change `todoHighlight` so that the selected todo is also highlighted.
 
 ## Links
 
@@ -25,11 +31,18 @@ The goal of SkandhaJS is to provide data containers that have reusable behaviors
 - aspiration: a library that implements a form of Aspect Oriented Programming using callback functions.
 - mapDataToProps: a helper function that maps data from one object to another. It's used to map data between facets.
 - registerCtr: the function that tells SkandhaJS which containers and facets exist.
-- setCallbackMap: the function that installs the callbacks objects that are used by a facet.
+- setCallbackMap: the function that installs the callbackMap objects that are used by a facet.
 
 ## Example: a Selection facet
 
-A selection can be considered a kind of meta-data: we have the original data (e.g. a list of todos) and the data about which todos are selected. In Skandha, a behaviour such as selection is implemented in a generic "facet" class. Related facets are stored in a container, together with the data that they describe. For example, a todo container may have facets for selecting, highlighting and filtering todos. Because facets are generic they can be used in any container. Moreover, when you pass facets to a UI component then the component can handle selection (or filtering, drag-and-drop, etc) in a generic way. In this example, we will show a simplified Selection facet class.
+In Skandha, a behaviour such as selection is implemented in a "facet" class. The purpose of the selection facet is to store (and manipulate) the meta-data related to selection. Related facets (e.g. selection, highlighting and filtering) are stored in a container, together with the data that they describe.
+
+There are two ways in which facets help you to write generic code:
+
+1. They can be used in any container, regardless of what data-type is stored in the container.
+2. They allow you to handle user-interaction in UI components in a uniform way. All UI components that receive a selection facet will use the same interface to make a selection (and in theory the component can remain agnostic of the data-type of the selected items).
+
+In this example, we will show a simplified Selection facet class.
 
 ```
 // file: Selection.ts
@@ -83,16 +96,16 @@ As a side effect of calling an operation, the entire container is logged to the 
 
 The `@host` decorator comes from the `Aspiration` library. When you call a function `f` that is decorated with `@host` then the following happens:
 
-- Aspiration looks up the callbacks object for the operation (that was installed with `setCallbackMap()`)
-- it copies the operation arguments to the callbacks object (so that callback functions can access these arguments)
-- if calls `f(arguments)`.
-- it restores the callbacks object to its previous state (this ensures that nested calls work correctly).
+- Aspiration looks up the callbackMap object (that was installed with `setCallbackMap()`) for the given operation;
+- it copies the operation arguments to the callbackMap object, so that callback functions can access these arguments;
+- if calls `f(arguments)`;
+- it restores the callbackMap object to its previous state. This ensures that nested calls work correctly.
 
-If the original function `f` wants to access the callbacks object then it uses the `getCallbacks` helper function. Note that the client code calls `f` in the usual way; it remains agnostic of the fact that callbacks are used to help implement `f`.
+If the original function `f` wants to access the callbackMap object then it uses the `getCallbacks` helper function. Note that the client code calls `f` in the usual way; it remains agnostic of the fact that callbacks are used to help implement `f`.
 
 ## Callback functions have access to all operation arguments
 
-Each callback function of the callbacks object has access to all arguments of the operation. For this to work, it's required that you pass the list of argument names to the `@host` decorator (unfortunately, typescript does not have introspection capabilities that allow to automate this). These names need to match the corresponding fields of the callbacks object class (`Selection_selectItem`).
+Each callback function of the callbackMap object has access to all arguments of the operation. For this to work, it's required that you pass the list of argument names to the `@host` decorator (unfortunately, typescript does not have introspection capabilities that allow to automate this). These names need to match the corresponding fields of the callbackMap class. In our example, the argument of the `selectItem` operation is named `selectionParams`. A field with the same name exists in the `Selection_selectItem` class that stores the callbackMap. The name `selectItem` is passed to the `@host` decorator so that `aspiration` knows that the `selectItem` argument must be copied to the `Selection_selectItem` callbackMap.
 
 ## Facets have a static `className()` function
 
@@ -181,23 +194,23 @@ In `createContainer.ts` we see how `createContainer()` creates a `todosCtr` obje
 
 ## Callbacks are installed with `setCallbackMap()`
 
-We call `setCallbackMap()` to install a callbacks object for each operation of the `Selection` facet. In our case we only have one operation (`selectItem()`) that has only one callback (`select()`). This callback function calls `handleSelectItem()` to take care of doing the selection. This is a typical pattern: you want the call to `setCallbackMap()` to be as short and readable as possible, so that it's easy to understand what happens in each operation of each facet.
+We call `setCallbackMap()` to install a callbackMap object for each operation of the `Selection` facet. In our case we only have one operation (`selectItem()`) that has only one callback (`select()`). This callback function calls `handleSelectItem()` to take care of doing the selection. This is a typical pattern: you want the call to `setCallbackMap()` to be as short and readable as possible, so that it's easy to understand what happens in each operation of each facet.
 
 ## Callbacks can take care of side effects
 
 An important advantage of using callbacks is that they can also take care of side effects. In this case, it calls `highlightFollowsSelection()` to ensure that selected items are also highlighted. Note that the callback function is able to connect selection and highlight because it has access to the entire container.
 
-## The callback function can access the callbacks object through `this`.
+## The callback function can access the callbackMap object through `this`.
 
 When the clients calls `todosCtr.selection.selectItem()` and `select()` is called back, then all arguments of the operation are available through `this`. In our case, we see that the `select()` callback function is accessing `this.selectionParams`.
 
 ## The `exit()` callback function is called at the end of an operation
 
-In `createContainer.ts` we also have a `Filtering` facet that has an `apply(f)` operation (where `f` is the filter function). In this operation, we install the `exit()` callback that corrects the highlight when the filter function changes (because the new filter may hide the highlighted item). The `exit()` callback is called automatically at the end of each operation. Similarly, the `enter()` callback is called at the beginning.
+In `createContainer.ts` we also have a `Filtering` facet that has an `apply(f)` operation (where `f` is the filter function). In this operation, we install the `exit()` callback that corrects the highlight when the filter function changes (because the new filter may hide the highlighted item). The `exit()` callback is called automatically at the end of each operation. Similarly, the `enter()` callback is called automatically at the beginning.
 
 ## The `registerCtr()` allows SkandhaJS to introspect the container
 
-At the end of `createContainer.ts` we call `registerCtr()` so that SkandhaJS can introspect the container. This is necessary for two reasons. First, it makes it possible to look up a facet by its name or class, e.g. `getf(todosCtr, Selection)` returns `todosCtr.selection`. Second, it informs SkandhaJS how to log all facets of the container
+At the end of `createContainer.ts` we call `registerCtr()` so that SkandhaJS can introspect the container. This is necessary for two reasons. First, it makes it possible to look up a facet by its name or class, e.g. `getf(todosCtr, Selection)` returns `todosCtr.selection`. Second, it informs SkandhaJS how to log all facets of the container.
 
 ## Example: `mapDataToProps()` maps data onto each facet
 
@@ -259,7 +272,7 @@ setOptions({logging: true});
 
 ## The `mapDataToProps()` function maps data between objects
 
-The `mapDataToProp()` function takes a container, field name and function then it turns that field into a `get` property that executes the given function. The `mapDataToProps()` is a small convenience function that calls `mapDataToProp()` on each of its arguments. In our example, we see that the `todosCtr.data.todos` field is mapped onto the `todosCtr.filtering.inputItems` field.
+The `mapDataToProp()` function takes a container, field name and function and installs a `get` property (on the given container, using the given field name) that executes the given function. The `mapDataToProps()` is a small convenience function that calls `mapDataToProp()` on each of its arguments. In our example, we see that the `todosCtr.data.todos` field is mapped onto the `todosCtr.filtering.inputItems` field.
 
 ## The `pmap()` function adds type-checking
 
@@ -286,5 +299,4 @@ separating concerns in a clear and understandable way. We could add a `Editing` 
 a policy that says that changing the highlight disables editing. By using facets, we will not be tempted to put
 editing-specific code directly in the highlight function (that would obviously be mixing concerns).
 
-In my experience, using SkandhaJS leads to code reuse and improved structure. On top of that, it offers a good
-debugging experience by logging all changes in the container. Finally, it works nicely with MobX to render the container contents.
+In my experience, using SkandhaJS leads to code reuse and improved structure. On top of that, it offers a good debugging experience by logging all changes in the container. Finally, it works nicely with MobX to render the container contents.
