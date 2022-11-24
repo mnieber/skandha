@@ -2,13 +2,19 @@
 
 ## Rationale
 
-The goal of SkandhaJS is to provide data containers that have reusable behaviors, such as selection, highlighting, filtering, drag-and-drop, etc. The only requirement for using these containers is that every item in the container has a unique id. SkandhaJS allows you to combine behaviors that have interactions.
+The goal of SkandhaJS is to provide data containers that have reusable behaviors. These behaviours are implemented in classes called "facets". Examples of facets are selection, highlighting, filtering, drag-and-drop, etc. SkandhaJS allows you to connect these facets, which makes it possible to design interactions between different behaviours.
 
-As a brief illustration, consider the example of selecting a todo in a list of todos. We'll assume the application has a state that stores a list of todos, associated selection data (`todoSelection`) and associated highlight data (`todoHighlight`):
+As a brief illustration, consider the example of selecting a todo in a list of todos. We'll assume the application has a state that stores a list of todos, associated selection data (`todoSelection`) and highlight data (`todoHighlight`):
 
 1. When the user clicks on a todo in a todo-list, the list component calls `todoSelection.selectItem(todo.id, shift, ctrl)`.
-2. The `aspiration` library intercepts the call in order to prepare a so-called `callbackMap`. To do its work of updating the selection data, the `todoSelection.selectItem` can use any of the callbacks in this map.
-3. When a callback is executed, then the callback function can look up and change related data. For example, the `select` callback can change `todoHighlight` so that the selected todo is also highlighted.
+2. The `aspiration` library intercepts the call in order to prepare a so-called `callbackMap`. 3. Next, the `todoSelection.selectItem` function runs. It uses the callbacks in the `callbackMap` to do its work.
+3. Callbacks can take care of side-effects. For example, the `select` callback can change `todoHighlight` so that the selected todo is also highlighted.
+
+There are three ways in which facets help you to write generic code:
+
+1. They can be reused in any container, regardless of what data-type is stored in the container.
+2. They allow you to capture the interaction between behaviours in reusable functions.
+3. They allow you to handle user-interaction in UI components in a uniform way. All UI components that receive a selection facet will use the same interface to make a selection (and in theory the component can remain agnostic of the data-type of the selected items).
 
 ## Links
 
@@ -35,14 +41,7 @@ As a brief illustration, consider the example of selecting a todo in a list of t
 
 ## Example: a Selection facet
 
-In Skandha, a behaviour such as selection is implemented in a "facet" class. The purpose of the selection facet is to store (and manipulate) the meta-data related to selection. Related facets (e.g. selection, highlighting and filtering) are stored in a container, together with the data that they describe.
-
-There are two ways in which facets help you to write generic code:
-
-1. They can be used in any container, regardless of what data-type is stored in the container.
-2. They allow you to handle user-interaction in UI components in a uniform way. All UI components that receive a selection facet will use the same interface to make a selection (and in theory the component can remain agnostic of the data-type of the selected items).
-
-In this example, we will show a simplified Selection facet class.
+In Skandha, a behaviour such as selection is implemented in a "facet" class. The purpose of the selection facet is to store (and manipulate) the meta-data related to selection. In this example, we will show a simplified Selection facet class.
 
 ```
 // file: Selection.ts
