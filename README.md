@@ -119,6 +119,8 @@ Each callback function of the callbackMap object has access to all arguments of 
 ## Facets have a static `className()` function
 
 To allow SkandhaJS to log the container, you need to add the `className()` function to each facet class, so that Skandha knows the name of the facet.
+The `className()` function is also used to look up facets in containers. Note that if you subclass a facet class then you should (in most cases)
+not override the `className()`. By keeping the original `className()` function, you will be able to replace facets with their subclassed versions without affecting the facet lookup mechanism.
 
 ## Example: a container with Selection, Highlight and Filtering
 
