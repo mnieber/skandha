@@ -2,22 +2,14 @@
 
 ## Introduction
 
-The goal of SkandhaJS is to provide data containers that have reusable behaviors. These behaviours are implemented in classes called "facets". Examples of facets are selection, highlighting, filtering, drag-and-drop, etc. By connecting these facets, you can create interactions between different behaviours.
-
-Every facet provides an interface that supports a particular behaviour. This interface is used throughout the application, and ensures that the basic mechanism (e.g. for doing selection) is the same everywhere. The details of the behaviour depend on callback functions that the programmer provides:
-
-1. Callbacks decide what exactly happens when an item is selected, highlighted, deleted etc.
-2. Callbacks implement interactions. For example: when selecting an item, also higlight it.
-
-The second point is important for limiting the mixing of concerns that happens when you are combining multiple behaviours. This mixing of concerns is unavoidable, but should be limited to specific places that can be easily inspected.
+SkandhaJS is a library that provides data containers with reusable behaviors, or "facets," that are implemented as classes. Examples of facets are selection, highlighting, filtering, drag-and-drop, etc. These facets provide interfaces for specific behaviors and rely on callback functions provided by the programmer to specify the details of those behaviors. The goal of SkandhaJS is to provide a way to create interactions between different behaviors in a consistent and modular way.
 
 As a brief illustration, consider the example of selecting a todo in a list of todos:
 
-1. The application creates a local state to store todos. This state contains a `todoSelection` facet.
+1. The application has a local state with a list of todos. The state contains a `todoSelection` facet so that clients can make a selection.
 2. When the user clicks on a todo, the todo-list component calls `todoSelection.selectItem(todo.id, shift, ctrl)`.
-3. The `aspiration` library intercepts the call in order to prepare a so-called `callbackMap`.
-4. Next, the `todoSelection.selectItem` function runs. It uses the `select` function from the `callbackMap` to do its work.
-5. The `select` callback performs the selection and a side-effect: it highlights the item as well.
+3. The `todoSelection.selectItem` function runs the `select` function from its `callbackMap`.
+4. The `select` callback performs the selection and a side-effect: it highlights the item as well.
 
 ## Benefits
 
@@ -25,7 +17,7 @@ There are three ways in which facets help you to write generic code:
 
 1. They can be reused in any container, regardless of what data-type is stored in the container. This means that selection, filtering and drag-and-drop work the same everywhere in the application.
 2. They allow you to capture the interaction between behaviours in reusable functions.
-3. They allow you to handle user-interaction in UI components in a uniform way. All UI components that receive a selection facet will use the same interface to make a selection (and in theory the component can remain agnostic of the data-type of the selected items).
+3. They allow you to handle user-interaction in UI components in a uniform way. All UI components that receive a selection facet will use the same interface to make a selection (and in theory the component can remain agnostic of how selection works, or even of the type of items that are being selected).
 
 ## Links
 
