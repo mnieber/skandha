@@ -11,12 +11,27 @@ export function mapDataToProp<F, P extends keyof F>(
   });
 }
 
-export function mapDataToProps(...mappings: any[]) {
-  for (const mapping of mappings) {
-    mapDataToProp(mapping[0][0], mapping[0][1], mapping[1]);
-  }
-}
+type Mappings<F> = {
+  [K in keyof F]?: {
+    [P in keyof F[K]]?: () => F[K][P];
+  };
+};
 
-export function pmap<F, P extends keyof F>(member: [F, P], getter: () => F[P]) {
-  return [member, getter];
+export function mapDataToProps<T>(target: T, mappings: Mappings<T>) {
+  for (const key in mappings) {
+    if (mappings.hasOwnProperty(key)) {
+      const facet = target[key as keyof T];
+      const propMappings = mappings[key as keyof T];
+      if (facet && propMappings) {
+        for (const prop in propMappings) {
+          if (propMappings.hasOwnProperty(prop)) {
+            const getter = propMappings[prop as any];
+            if (getter) {
+              mapDataToProp(facet, prop as keyof typeof facet, getter);
+            }
+          }
+        }
+      }
+    }
+  }
 }
