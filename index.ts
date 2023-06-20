@@ -1,5 +1,5 @@
 export { getCtrState } from './internal/logging';
-export { decorateCb, getOptions, setOptions } from './internal/options';
+export { getOptions, setOptions } from './internal/options';
 export { getFacetMemberNames, getc } from './lib/ctr';
 export {
   data,
