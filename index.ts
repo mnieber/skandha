@@ -1,5 +1,6 @@
 export { getCtrState } from './internal/logging';
 export { getOptions, setOptions } from './internal/options';
+export { addCleanUpFunctionToCtr, cleanUpCtr } from './lib/cleanUp';
 export { getFacetMemberNames, getc } from './lib/ctr';
 export {
   data,
