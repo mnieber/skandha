@@ -103,6 +103,22 @@ To allow SkandhaJS to log the container, you need to add the `className()` funct
 The `className()` function is also used to look up facets in containers. Note that if you subclass a facet class then you should (in most cases)
 not override the `className()`. By keeping the original `className()` function, you will be able to replace facets with their subclassed versions without affecting the facet lookup mechanism.
 
+## Facets that use inheritance must have a static `skandhaSymbol` member
+
+The skandhaSymbol member is a workaround for a change in Typescript that affects the
+`experimentalDecorators` feature. Add this member if the facet class inherits from some
+other class.
+
+```
+// file: Selection.ts
+import { Selection } from 'skandha-facets';
+
+export class MySelection extends Selection {
+  static className = () => 'MySelection';
+  static skandhaSymbol = Symbol('MySelection');
+}
+```
+
 ## Example: a container with Selection, Highlight and Filtering
 
 Now that we have some idea of what a facet is, we will discuss containers.

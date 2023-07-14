@@ -1,5 +1,12 @@
 import { symbols } from './symbols';
 
+// This class is a workaround for a problem that occurs when you
+// try to store information using facet.constructor[symbols.admin] = ...
+// For some reason, when you inherit from a Facet class then the original
+// class and the enherited class share the same facet.constructor[symbols.admin]
+// instance.
+const facetClassAdminMap = new WeakMap();
+
 export function getOrCreate(obj, key, fn) {
   if (!obj[key]) {
     obj[key] = fn();
@@ -18,6 +25,20 @@ export function getCtrAdmin(ctr) {
 }
 
 export function getFacetClassAdmin(facetClass) {
+  if (!!facetClass.skandhaSymbol) {
+    return getOrCreate(facetClassAdminMap, facetClass.skandhaSymbol, () => {
+      // This function returns the initial value for the facetClassAdminMap.
+      // If the facetClass has a superClass, then we return a copy of the
+      // facetClassAdmin of the superClass.
+      const superClass = Object.getPrototypeOf(facetClass);
+      if (superClass !== Function.prototype && superClass !== null) {
+        return {
+          ...getFacetClassAdmin(superClass),
+        };
+      }
+      return {};
+    });
+  }
   return getOrCreate(facetClass, symbols.admin, () => ({}));
 }
 
