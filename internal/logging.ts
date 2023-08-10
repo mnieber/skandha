@@ -1,5 +1,5 @@
 import { getCtrAdmin, getFacetAdmin } from '../internal/utils';
-import { getc, getFacetMemberNames } from '../lib/ctr';
+import { getFacetMemberNames, getc } from '../lib/ctr';
 import { getLoggedMemberNames } from '../lib/data';
 import { options } from './options';
 
@@ -31,10 +31,10 @@ export function log(facet, operationMember, args, start) {
 
   if (start) {
     console.group(label);
-    console.log('%c           args: ', 'color: gray', args);
-    console.log('%c     state', 'color: gray', getState());
+    console.log('%c args: ', 'color: gray', args);
+    console.log('%c state', 'color: gray', getState());
   } else {
-    console.log('%c     next', 'color: gray', getState());
+    console.log('%c next', 'color: gray', getState());
     // @ts-ignore
     console.groupEnd(label);
   }
