@@ -2,22 +2,22 @@
 
 ## Introduction
 
-SkandhaJS is a library that provides data containers with reusable behaviors, or "facets," that are implemented as classes. Examples of facets are selection, highlighting, filtering, drag-and-drop, etc. These facets provide interfaces for specific behaviors and rely on callback functions provided by the programmer to specify the details of those behaviors. The goal of SkandhaJS is to provide a way to create interactions between different behaviors in a consistent and modular way.
+SkandhaJS is a library that provides data containers with generic (reusable) behaviors, or "facets," that are implemented as classes. Examples of facets are selection, highlighting, filtering, drag-and-drop, etc. These facets provide interfaces for specific behaviors and rely on callback functions provided by the programmer to specify the details of those behaviors. The goal of SkandhaJS is to provide a way to create interactions between different behaviors in a consistent and modular way.
 
 As a brief illustration, consider the example of selecting a todo in a list of todos:
 
 1. The application has a local state with a list of todos. The state contains a `todoSelection` facet so that clients can make a selection.
-2. When the user clicks on a todo, the todo-list component calls `todoSelection.selectItem(todo.id, shift, ctrl)`.
+2. When the user clicks on a todo, the todo-list component calls `todoSelection.selectItem({id: todo.id, shift, ctrl})`.
 3. The `todoSelection.selectItem` function runs the `select` function from its `callbackMap`.
 4. The `select` callback performs the selection and a side-effect: it highlights the item as well.
 
 ## Benefits
 
-There are three ways in which facets help you to write generic code:
+There are three ways in which facets help you to write reusable code:
 
 1. They can be reused in any container, regardless of what data-type is stored in the container. This means that selection, filtering and drag-and-drop work the same everywhere in the application.
 2. They allow you to capture the interaction between behaviours in reusable functions.
-3. They allow you to handle user-interaction in UI components in a uniform way. All UI components that receive a selection facet will use the same interface to make a selection (and in theory the component can remain agnostic of how selection works, or even of the type of items that are being selected).
+3. They allow you to handle user-interaction in UI components in a uniform way. All UI components that receive a selection facet will use the same interface to make a selection (and in theory the component can remain agnostic of how selection works, or even of the type of the items that are being selected).
 
 ## Links
 
@@ -30,9 +30,10 @@ There are three ways in which facets help you to write generic code:
 ## Glossary (conceptual)
 
 - callback function: a function that is called by an operation to help implement that operation
-- callbackMap object: a collection of callback functions that is used by an operation.
+- callbacks object: a collection of callback functions that is used by an operation.
+- callbackMap: a dictionary that contains a callbacks object for every operation of a facet
 - container: an object that contains data and facets. Typically, these facets are made to work together using callback functions.
-- facet: a class that implements a reusable behaviour, such as selection.
+- facet: a class that implements a generic behaviour, such as selection.
 - operation: a member function of a facet that changes the data of that facet.
 
 ## Glossary (technical)
@@ -40,11 +41,11 @@ There are three ways in which facets help you to write generic code:
 - aspiration: a library that implements a form of Aspect Oriented Programming using callback functions.
 - mapDataToProps: a helper function that maps data from one object to another. It's used to map data between facets.
 - registerCtr: the function that tells SkandhaJS which containers and facets exist.
-- setCallbackMap: the function that installs the callbackMap objects that are used by a facet.
+- setCallbackMap: the function that installs the callbackMap for a facet.
 
 ## Example: a Selection facet
 
-In Skandha, a behaviour such as selection is implemented in a "facet" class. The purpose of the selection facet is to store (and manipulate) the meta-data related to selection. In this example, we will show a simplified Selection facet class.
+In Skandha, a behaviour such as selection is implemented in a "facet" class. The purpose of the selection facet is to store (and manipulate) the selection state. In this example, we will show a simplified `Selection` facet class.
 
 ```
 // file: Selection.ts
@@ -76,7 +77,7 @@ export type SelectionCbs<T = any> = DefineCbs<Selection<T>, Cbs<T>>;
 
 ## Facets have @input, @data and @output members
 
-In `Selection.ts` we see the Selection facet class. It has a `selectableIds` field that stores the list of ids from which we can select. The `@input` decorator marks this field as an input. The `ids`, `anchorId` and `items` fields store the result of calling `selectItem()` and are marked as `@output` fields. Fields that are decorated with `@data` are used both as output and input. These decorators help with logging, and they also make it possible to bind the facets to state-management solutions such as MobX.
+In `Selection.ts` we see the `Selection` facet class. It has a `selectableIds` field that stores the list of ids from which we can select. The `@input` decorator marks this field as an input. The `ids`, `anchorId` and `items` fields store the result of calling `selectItem()` and are marked as `@output` fields. Fields that are decorated with `@data` are used both as output and input. These decorators help with logging, and they also make it possible to bind the facets to state-management solutions such as MobX (this is explained later).
 
 ## Operations are decorated with `@operation`.
 
@@ -84,37 +85,35 @@ The `Selection` facet has a `selectItem()` operation that allows you to select f
 
 ## Operations are logged
 
-As a side effect of calling an operation, the entire container is logged to the console (if logging is enabled); this includes the Selection facet, and any other facets that the container may have (such as filtering, or highlight). The log message contains all @input, @data and @output fields of all facets in the container.
+As a side effect of calling an operation, the entire container is logged to the console (if logging is enabled); this includes the `Selection` facet, and any other facets that the container may have (such as filtering, or highlight). The log message contains all `@input`, `@data` and `@output` fields of all facets in the container.
 
 ## The `@withCbs` decorator is used to enable callbacks in an operation.
 
 The `@withCbs` decorator comes from the `Aspiration` library. When you call a function `f` that is decorated with `@withCbs` then the following happens:
 
-- Aspiration looks up the callbackMap object (that was installed with `setCallbackMap()`) for the given operation;
-- it copies the operation arguments to the callbackMap object, so that callback functions can access these arguments;
-- if calls `f(arguments)`, which internally calls the installed callback functions;
-- it restores the callbackMap object to its previous state. This ensures that nested calls work correctly.
+- Aspiration looks up the callbacks object (that was installed with `setCallbackMap()`) for the given operation;
+- It copies the operation arguments to the callbacks object, so that callback functions can access these arguments;
+- It calls `f(arguments)`, which internally will use the installed callback functions to do its job;
+- It restores the callbacks object to its previous state. This ensures that nested calls work correctly.
 
-If the original function `f` wants to access the callbackMap object then it uses the `getCallbacks` helper function. Note that the client code calls `f` in the usual way; it remains agnostic of the fact that callbacks are used to help implement `f`.
+If the original function `f` wants to access the callbacks object then it uses the `getCallbacks` helper function. Note that the client code calls `f` in the usual way; it remains agnostic of the fact that callbacks are used to help implement `f`.
 
 ## Facets have a static `className()` function
 
-To allow SkandhaJS to log the container, you need to add the `className()` function to each facet class, so that Skandha knows the name of the facet.
-The `className()` function is also used to look up facets in containers. Note that if you subclass a facet class then you should (in most cases)
-not override the `className()`. By keeping the original `className()` function, you will be able to replace facets with their subclassed versions without affecting the facet lookup mechanism.
+To allow SkandhaJS to log the container, you need to add the `className()` function to each facet class, so that Skandha knows the name of the facet. The `className()` function is also used to look up facets in containers with the `getf` function (e.g. `getf(Selection, ctr)` returns the selection facet in `ctr`).
+
+Note that if you subclass a facet class then you should (in most cases) not override the `className()`. By keeping the original `className()` function, you will be able to replace facets with their subclassed versions without affecting the facet lookup mechanism. However, if you subclass the facet then you must add the `skandhaSymbol` member, as explained below.
 
 ## Facets that use inheritance must have a static `skandhaSymbol` member
 
-The skandhaSymbol member is a workaround for a change in Typescript that affects the
-`experimentalDecorators` feature. Add this member if the facet class inherits from some
-other class.
+Skandha will store class-level information about a facet class in the class itself. If you subclass a facet class then you must add a `skandhaSymbol` member so that Skandha will keep the information for the subclass separate from the information for the parent class:
 
 ```
 // file: Selection.ts
 import { Selection } from 'skandha-facets';
 
 export class MySelection extends Selection {
-  static className = () => 'MySelection';
+  static className = () => 'Selection';
   static skandhaSymbol = Symbol('MySelection');
 }
 ```
@@ -204,7 +203,7 @@ We call `setCallbackMap()` to install a callbackMap object for each operation of
 
 ## The callback function can access the callbackMap object through `this`.
 
-When the clients calls `todosCtr.selection.selectItem()` and `select()` is called back, then all arguments of the operation are available through `this`. In our case, we see that the `select()` callback function is accessing `this.args`. See the `aspiration` library documentation for details.
+When the clients calls `todosCtr.selection.selectItem()` and `select()` is called back, then all arguments of the `selectItem` operation are available through `this`. In our case, we see that the `select()` callback function is accessing `this.args`. See the `aspiration` library documentation for details.
 
 ## Callbacks can take care of side effects
 
@@ -216,7 +215,7 @@ In `createContainer.ts` we also have a `Filtering` facet that has an `apply(f)` 
 
 ## The `registerCtr()` allows SkandhaJS to introspect the container
 
-At the end of `createContainer.ts` we call `registerCtr()` so that SkandhaJS can introspect the container. This is necessary for two reasons. First, it makes it possible to look up a facet by its name or class, e.g. `getf(todosCtr, Selection)` returns `todosCtr.selection`. Second, it informs SkandhaJS how to log all facets of the container.
+At the end of `createContainer.ts` we call `registerCtr()` so that SkandhaJS can introspect the container. This is necessary for two reasons. First, it makes it possible to look up a facet by its name or class, e.g. `getf(Selection, todosCtr)` returns `todosCtr.selection`. Second, it informs SkandhaJS how to log all facets of the container.
 
 ## Example: `mapDataToProps()` maps data onto each facet
 
@@ -285,7 +284,7 @@ If you want to render the facets with React then we need to let React know when 
 ## Conclusion
 
 SkandhaJS introduces a lot of new patterns and ideas (that are of course not in fact new) to allow you to
-put reusable behaviours on top of your existing data-structures. The difference to a more standard approach
+put generic behaviours on top of your existing data-structures. The difference to a more standard approach
 can feel overwhelming, but it's important to point out the beneficial side effect of
 separating concerns in a clear and understandable way. We could add a `Editing` facet to our code and install
 a policy that says that changing the highlight disables editing. By using facets, we will not be tempted to put
