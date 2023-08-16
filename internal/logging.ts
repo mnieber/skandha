@@ -64,5 +64,5 @@ export function defaultGetCtrState(ctr) {
 }
 
 export function getCtrState(ctr) {
-  return (getCtrAdmin(ctr)?.ctrStateOverride ?? defaultGetCtrState)(ctr);
+  return (getCtrAdmin(ctr)?.getCtrState ?? defaultGetCtrState)(ctr);
 }

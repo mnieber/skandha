@@ -9,15 +9,21 @@ import { facetClassName } from './facet';
 export type OptionsT = {
   name: string;
   facets?: string[];
-  ctrState?: Function;
+  getCtrState?: Function;
 };
 
-export function registerCtr(ctr: any, options: OptionsT) {
+export type ArgsT = {
+  ctr: any;
+  options: OptionsT;
+  initCtr?: Function;
+};
+
+export function registerCtr({ ctr, options, initCtr }: ArgsT) {
   const ctrAdmin = getCtrAdmin(ctr);
   ctrAdmin.logName = options.name;
   ctrAdmin.facetMembers = ctrAdmin.facetMembers ?? [];
   ctrAdmin.facetByFacetClassName = ctrAdmin.facetByFacetClassName ?? {};
-  ctrAdmin.ctrStateOverride = options.ctrState;
+  ctrAdmin.getCtrState = options.getCtrState;
 
   (options.facets ?? Object.getOwnPropertyNames(ctr)).forEach((facetName) => {
     const facet = ctr[facetName];
@@ -49,5 +55,9 @@ export function registerCtr(ctr: any, options: OptionsT) {
       ctrAdmin.logName,
       getCtrState(ctr)
     );
+  }
+
+  if (initCtr) {
+    initCtr(ctr);
   }
 }
