@@ -16,5 +16,6 @@ export { getOperationMemberNames, operation } from './lib/operation';
 export { mapDataToProp, mapDataToProps } from './lib/patch';
 export { registerCtr } from './lib/registerCtr';
 export type { OptionsT as RegisterCtrOptionsT } from './lib/registerCtr';
+export { stub } from './lib/stub';
 
 export type ClassT = any;
