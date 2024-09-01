@@ -1,24 +1,21 @@
 import { log } from '../internal/logging';
 import { options } from '../internal/options';
-import { getFacetClassAdmin } from '../internal/utils';
+import { OperationOptions } from './operation';
 
-export type OperationOptions = {
-  async?: boolean;
-  log?: boolean;
-};
-
-export function operation(originalMethod, context) {
+export function asyncOp(originalMethod, context) {
   const methodName = String(context.name);
 
   return function (this: any, ...args) {
     options.logging && log(this, methodName, args, true);
     const result = originalMethod.apply(this, args);
-    options.logging && log(this, methodName, args, false);
-    return result;
+    return (result as any).then((returnValue) => {
+      options.logging && log(this, methodName, args, false);
+      return returnValue;
+    });
   } as any;
 }
 
-export function operationExt(punctualOptions: OperationOptions) {
+export function asyncOpExt(punctualOptions: OperationOptions) {
   return function (originalMethod, context) {
     const methodName = String(context.name);
 
@@ -27,12 +24,10 @@ export function operationExt(punctualOptions: OperationOptions) {
 
       isLogging && log(this, methodName, args, true);
       const result = originalMethod.apply(this, args);
-      isLogging && log(this, methodName, args, false);
-      return result;
-    };
-  } as any;
-}
-
-export function getOperationMemberNames(facet: any) {
-  return getFacetClassAdmin(facet.constructor).operationMemberNames ?? [];
+      return (result as any).then((returnValue) => {
+        isLogging && log(this, methodName, args, false);
+        return returnValue;
+      });
+    } as any;
+  };
 }

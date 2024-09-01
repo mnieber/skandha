@@ -1,17 +1,18 @@
 import { getFacetClassAdmin } from '../internal/utils';
 
-export function log(dataHost, dataMember, descriptor: any = undefined) {
-  const facetClassAdmin = getFacetClassAdmin(dataHost.constructor);
+export function log(target, context): void {
+  const facetClassAdmin = getFacetClassAdmin(target.constructor);
   facetClassAdmin.loggedMembers = facetClassAdmin.loggedMembers ?? {};
-  facetClassAdmin.loggedMembers[dataMember] = true;
-  return descriptor;
+  facetClassAdmin.loggedMembers[context.name] = true;
 }
 
-export function data(dataHost, dataMember, descriptor: any = undefined) {
-  const facetClassAdmin = getFacetClassAdmin(dataHost.constructor);
+export function data(target, context): void {
+  const facetClassAdmin = getFacetClassAdmin(target.constructor);
   facetClassAdmin.dataMembers = facetClassAdmin.dataMembers ?? {};
-  facetClassAdmin.dataMembers[dataMember] = true;
-  return log(dataHost, dataMember, descriptor);
+  facetClassAdmin.dataMembers[context.name] = true;
+
+  // Apply log decorator as well
+  log(target, context);
 }
 
 export function getLoggedMemberNames(facet) {
