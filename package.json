@@ -3,6 +3,12 @@
   "version": "0.14.0",
   "description": "Create data containers with modular behaviours",
   "main": "index.js",
+  "exports": {
+    ".": {
+      "development": "./index.ts",
+      "default": "./index.js"
+    }
+  },
   "repository": "https://github.com/mnieber/skandha.git",
   "author": "Maarten Nieber",
   "license": "MIT",
